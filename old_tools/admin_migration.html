@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>データ構造移行ツール（大・中・小ジャンル化）</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background: #f4f4f9; }
+        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { padding: 10px 20px; cursor: pointer; font-size: 16px; background: #3498db; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #log { background: #222; color: #0f0; padding: 15px; border-radius: 5px; height: 400px; overflow-y: scroll; font-family: monospace; white-space: pre-wrap; }
+        .warning { color: red; font-weight: bold; }
+        .diff-view { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 14px; }
+        .new-val { color: #e67e22; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>🛠 データ構造移行ツール</h1>
+<p>
+    既存のすべての本を読み込み、新しい3階層フィールド（mainGenre, targetGenres, subGenres）を生成して保存します。<br>
+    <span class="warning">※既存の `genres` フィールドは削除せず維持するため、現在のサイトは壊れません。</span>
+</p>
+
+<div class="card">
+    <h3>Step 1: データの読み込みと変換シミュレーション</h3>
+    <p>まずはデータを読み込み、どのように変換されるか確認してください。</p>
+    <button id="btnLoad">データを読み込んで変換チェック</button>
+</div>
+
+<div class="card">
+    <h3>Step 2: データベースへの書き込み実行</h3>
+    <p>シミュレーション結果に問題がなければ、実際にFirebaseを更新します。</p>
+    <button id="btnExecute" disabled>更新を実行する</button>
+    <p id="progress" style="margin-top:10px; font-weight:bold;"></p>
+</div>
+
+<div id="log">ログがここに表示されます...</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { 
+      getFirestore, collection, getDocs, writeBatch, doc 
+    } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
+      authDomain: "book-ree.firebaseapp.com",
+      projectId: "book-ree",
+      storageBucket: "book-ree.firebasestorage.app",
+      messagingSenderId: "721168073032",
+      appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let allBooks = [];
+    let readyToUpdate = false;
+
+    // 定義データ（判定用）
+    const TARGET_KEYWORDS = {
+        "general": ["一般", "社会人", "キャリア", "学び直し", "教養"],
+        "university": ["大学", "学部", "自己啓発", "資格"],
+        "highschool": ["高校", "大学受験", "共通テスト"],
+        "juniorhigh": ["中学", "高校入試", "高校受験"],
+        "elementary": ["小学", "中学入試", "中学受験", "ドリル"],
+        "toddler": ["幼児", "ひらがな", "かず", "ちえ", "ドリル"] // 学習ドリル系
+    };
+
+    const SUB_GENRE_KEYWORDS = {
+        "mystery": ["ミステリー", "推理", "サスペンス"],
+        "fantasy": ["ファンタジー", "異世界"],
+        "sf": ["SF", "サイエンス", "宇宙", "ロボット"],
+        "history": ["歴史", "時代", "戦国", "幕末"],
+        "business": ["経営", "マーケティング", "リーダーシップ", "仕事", "経済", "投資", "金融"],
+        "hobby": ["料理", "旅行", "健康", "美容", "スポーツ", "カメラ", "鉄道", "将棋", "囲碁"],
+        "specialized": ["人文", "社会科学", "理工", "医学", "芸術", "語学", "資格", "プログラミング", "技術"],
+        "children": ["絵本", "童話", "図鑑", "学習マンガ"]
+    };
+
+    // ロガー
+    const logDiv = document.getElementById("log");
+    function log(msg) {
+        logDiv.innerText += msg + "\n";
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // Step 1: 読み込み & シミュレーション
+    document.getElementById("btnLoad").addEventListener("click", async () => {
+        log("🔄 データを読み込んでいます...");
+        try {
+            const snap = await getDocs(collection(db, "books"));
+            allBooks = [];
+            snap.forEach(d => allBooks.push({ id: d.id, ...d.data() }));
+            
+            log(`✅ ${allBooks.length} 冊のデータを取得しました。`);
+            log("--- 変換シミュレーション開始 ---");
+
+            let previewCount = 0;
+            allBooks.forEach(book => {
+                const newData = calculateNewStructure(book);
+                book._newData = newData; // 保存用に保持
+
+                if (previewCount < 10) { // 最初の10件だけ詳細ログ表示
+                    log(`📘 [${book.title}]`);
+                    log(`   Old Genres: [${book.genres ? book.genres.join(", ") : ""}]`);
+                    log(`   🆕 Main: ${newData.mainGenre}`);
+                    log(`   🆕 Target: [${newData.targetGenres.join(", ")}]`);
+                    log(`   🆕 Sub: [${newData.subGenres.join(", ")}]`);
+                    log("-----------------------------------");
+                    previewCount++;
+                }
+            });
+
+            log(`\n✅ 全件の変換計算が完了しました。問題なければ「更新を実行する」を押してください。`);
+            document.getElementById("btnExecute").disabled = false;
+            readyToUpdate = true;
+
+        } catch (e) {
+            log(`❌ エラー: ${e.message}`);
+            console.error(e);
+        }
+    });
+
+    // Step 2: 更新実行
+    document.getElementById("btnExecute").addEventListener("click", async () => {
+        if (!readyToUpdate) return;
+        const btn = document.getElementById("btnExecute");
+        btn.disabled = true;
+        const progress = document.getElementById("progress");
+
+        log("\n🚀 データベースの更新を開始します...");
+        
+        // Firestoreのバッチ書き込み（500件ずつ）
+        const chunkSize = 400; 
+        const chunks = [];
+        for (let i = 0; i < allBooks.length; i += chunkSize) {
+            chunks.push(allBooks.slice(i, i + chunkSize));
+        }
+
+        let processed = 0;
+        try {
+            for (const chunk of chunks) {
+                const batch = writeBatch(db);
+                chunk.forEach(book => {
+                    const ref = doc(db, "books", book.id);
+                    // 既存データは消さず、新しいフィールドをマージする
+                    batch.update(ref, {
+                        mainGenre: book._newData.mainGenre,
+                        targetGenres: book._newData.targetGenres,
+                        subGenres: book._newData.subGenres
+                    });
+                });
+                await batch.commit();
+                processed += chunk.length;
+                progress.innerText = `進捗: ${processed} / ${allBooks.length} 完了`;
+                log(`... ${processed} 件 完了`);
+            }
+            log("\n🎉 すべての更新が完了しました！");
+            log("次は main.js を新しいフィールドに対応するように修正してください。");
+
+        } catch (e) {
+            log(`❌ 更新中にエラー発生: ${e.message}`);
+            console.error(e);
+            btn.disabled = false;
+        }
+    });
+
+    /**
+     * ★ 新しいジャンル構造決定ロジック
+     */
+    function calculateNewStructure(book) {
+        // テキスト情報を結合して正規化
+        const text = JSON.stringify([
+            book.title, 
+            book.categories || [], 
+            book.description || "",
+            book.genres || [] // 古いジャンル情報もヒントにする
+        ]).toLowerCase();
+
+        let main = "other";
+        let targets = new Set();
+        let subs = new Set();
+
+        // 1. 中ジャンル（Target）の判定 (学習参考書用)
+        for (const [key, keywords] of Object.entries(TARGET_KEYWORDS)) {
+            if (keywords.some(k => text.includes(k))) {
+                targets.add(key);
+            }
+        }
+
+        // 2. 小ジャンル（Sub）の判定
+        for (const [key, keywords] of Object.entries(SUB_GENRE_KEYWORDS)) {
+            if (keywords.some(k => text.includes(k))) {
+                subs.add(key);
+            }
+            // 補完: 既存のサブジャンルロジックも加味
+            // 例: テキストに「推理」があれば mystery を追加
+        }
+
+        // 3. 大ジャンル（Main）の優先順位付き判定
+        // ここで「文芸」と「学習参考書」を明確に分ける
+
+        // A. 学習参考書 (Study)
+        // ヒント: "study"タグがある、またはターゲット年代が明確にある、または「参考書」「ドリル」「大学」「高校」などが強い
+        const isStudyStrong = text.includes("study") || text.includes("学習") || text.includes("参考書") || text.includes("ドリル") || text.includes("問題集");
+        const hasTarget = targets.size > 0;
+        
+        if (isStudyStrong && hasTarget) {
+            main = "study";
+        } 
+        // B. 児童書 (Children)
+        else if (text.includes("children") || text.includes("絵本") || text.includes("童話") || text.includes("児童")) {
+            main = "children";
+        }
+        // C. 専門書 (Specialized)
+        else if (text.includes("specialized") || text.includes("工学") || text.includes("医学") || text.includes("技術") || text.includes("プログラミング")) {
+            main = "specialized";
+        }
+        // D. ビジネス (Business)
+        else if (text.includes("business") || text.includes("経済") || text.includes("経営") || text.includes("投資")) {
+            main = "business";
+        }
+        // E. 趣味・実用 (Hobby)
+        else if (text.includes("hobby") || text.includes("料理") || text.includes("旅行") || text.includes("健康")) {
+            main = "hobby";
+        }
+        // F. 文芸 (Literature) - 他に該当せず、小説っぽいもの
+        else if (text.includes("literature") || text.includes("小説") || text.includes("文庫") || text.includes("物語") || subs.has("mystery") || subs.has("sf") || subs.has("fantasy") || subs.has("history")) {
+            main = "literature";
+        }
+        // G. それでも決まらなければ、既存のタグを信じる
+        else {
+            if (book.genres && book.genres.includes('study')) main = "study";
+            else if (book.genres && book.genres.includes('literature')) main = "literature";
+            // ...
+        }
+
+        // 整合性チェック: StudyじゃないのにTargetがある場合
+        // 例: 「小学生のための料理本」 -> Main: Hobby, Target: elementary
+        // この仕様は許容する（中ジャンルは複数持てるため）
+        
+        // 最終調整: もしMainがStudyなら、必ずTargetは配列にする
+        // もしMainがStudy以外なら、Targetは空でも良いが、検索用に残しても良い。
+        // 今回の仕様では「学習参考書以外では中ジャンルは空」という要望があったため、クリアする
+        if (main !== "study") {
+            targets.clear();
+        }
+
+        return {
+            mainGenre: main,
+            targetGenres: Array.from(targets),
+            subGenres: Array.from(subs)
+        };
+    }
+</script>
+
+</body>
+</html>

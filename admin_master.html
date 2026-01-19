@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>BookRee Admin Master</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --danger: #e74c3c; --success: #27ae60; }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f4f7f6; margin: 0; color: #333; }
+        
+        /* ログイン画面 */
+        #login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #2c3e50; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        #login-box { background: white; padding: 40px; border-radius: 8px; text-align: center; width: 300px; }
+        #login-box input { width: 100%; padding: 10px; margin: 10px 0; font-size: 16px; box-sizing: border-box; }
+        #login-box button { width: 100%; padding: 10px; background: var(--accent); color: white; border: none; font-size: 16px; cursor: pointer; }
+
+        /* メイン画面 */
+        #app { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        h1 { margin: 0; font-size: 24px; color: var(--primary); }
+        
+        /* ダッシュボード */
+        .dashboard-stats { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; gap: 20px; flex-wrap: wrap; }
+        
+        .toolbar { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        input.search-box { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        
+        button.btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-search { background: var(--accent); }
+        .btn-fix { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn:hover { opacity: 0.9; }
+
+        /* テーブル */
+        .table-container { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: bold; color: #555; }
+        tr:hover { background: #f1f1f1; }
+        
+        .thumb { width: 40px; height: 50px; object-fit: cover; border-radius: 2px; background: #eee; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; color: white; margin-right: 4px; }
+        .bg-study { background: #9b59b6; }
+        .bg-lit { background: #e67e22; }
+        .bg-target { background: #34495e; }
+        
+        .actions { display: flex; gap: 5px; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+        /* 編集モーダル */
+        #edit-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal-content { background: white; width: 500px; margin: 50px auto; padding: 30px; border-radius: 8px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .close-btn { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; color: #999; }
+    </style>
+</head>
+<body>
+
+<!-- 簡易ログイン -->
+<div id="login-overlay">
+    <div style="color:white; font-size:24px; margin-bottom:20px; font-weight:bold;">BookRee Admin Master</div>
+    <div id="login-box">
+        <p>パスワードを入力してください</p>
+        <input type="password" id="admin-pass" placeholder="Password">
+        <button onclick="checkPass()">ログイン</button>
+        <p id="login-msg" style="color:red; margin-top:10px; font-size:12px;"></p>
+    </div>
+</div>
+
+<!-- メインアプリ -->
+<div id="app">
+    <header>
+        <div>
+            <h1>📚 管理ダッシュボード</h1>
+            <span style="font-size:14px; color:#666;" id="status-bar">準備完了</span>
+        </div>
+        <a href="index.html" target="_blank" style="text-decoration:none; color:var(--accent);">サイトを表示 ↗</a>
+    </header>
+
+    <!-- ▼▼▼ 追加：統計ダッシュボード ▼▼▼ -->
+    <div class="dashboard-stats">
+        <!-- ① サイト閲覧数 -->
+        <div style="flex: 1; min-width: 150px; border-right: 1px solid #eee;">
+            <h3 style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 14px;">閲覧数 (PV)</h3>
+            <div id="stat-pv" style="font-size: 32px; font-weight: bold; color: #e67e22;">Loading...</div>
+            <div style="font-size:10px; color:#999;">ユニークセッション数</div>
+        </div>
+
+        <!-- ② ジャンル別利用頻度 -->
+        <div style="flex: 3; min-width: 300px;">
+            <h3 style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 14px;">ジャンル別 利用頻度（投票アクション数）</h3>
+            <div id="stat-genres" style="display: flex; flex-direction: column; gap: 6px;">
+                Loading stats...
+            </div>
+        </div>
+
+        <!-- ③ Firebaseリンク -->
+        <div style="flex: 1; min-width: 150px; border-left: 1px solid #eee; padding-left: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+            <a href="https://console.firebase.google.com/u/0/project/book-ree/firestore/usage" target="_blank" style="background:#f1c40f; color:#333; font-size: 12px; text-decoration: none; padding:8px 15px; border-radius:20px; font-weight:bold;">
+                📊 Firebaseで確認
+            </a>
+        </div>
+    </div>
+    <!-- ▲▲▲ ここまで ▲▲▲ -->
+
+    <div class="toolbar">
+        <input type="text" id="search-input" class="search-box" placeholder="タイトル、著者、IDで検索...">
+        <button class="btn btn-search" onclick="runSearch()">🔍 検索</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-fix" onclick="runBatchSmartFix()">⚡️ 表示中の本を一括修復 (V6)</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:60px;">IMG</th>
+                    <th>タイトル / 著者</th>
+                    <th>ジャンル情報</th>
+                    <th style="width:80px;">スコア</th>
+                    <th style="width:140px;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="book-list">
+                <!-- JSで描画 -->
+            </tbody>
+        </table>
+        <div style="padding:20px; text-align:center;">
+            <button class="btn btn-search" onclick="loadMore()">さらに読み込む</button>
+        </div>
+    </div>
+</div>
+
+<!-- 編集モーダル -->
+<div id="edit-modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">×</span>
+        <h2>編集</h2>
+        <input type="hidden" id="edit-id">
+        
+        <div class="form-group">
+            <label>タイトル</label>
+            <input type="text" id="edit-title">
+        </div>
+        <div class="form-group">
+            <label>著者 (カンマ区切り)</label>
+            <input type="text" id="edit-authors">
+        </div>
+        <div class="form-group">
+            <label>メインジャンル (ID)</label>
+            <select id="edit-genre">
+                <option value="study">study (学習参考書)</option>
+                <option value="literature">literature (文芸)</option>
+                <option value="business">business (ビジネス)</option>
+                <option value="specialized">specialized (専門書)</option>
+                <option value="hobby">hobby (趣味・実用)</option>
+                <option value="children">children (児童書)</option>
+                <option value="other">other</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>ターゲット (カンマ区切り, 例: high_school,general)</label>
+            <input type="text" id="edit-target">
+        </div>
+        <div class="form-group">
+            <label>スコア</label>
+            <input type="number" id="edit-score">
+        </div>
+        <div class="form-group">
+            <label>画像URL</label>
+            <input type="text" id="edit-image">
+        </div>
+        <div style="text-align:right; margin-top:20px;">
+            <button class="btn btn-danger" onclick="deleteBook()">削除</button>
+            <button class="btn btn-success" onclick="saveBook()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { 
+        getFirestore, collection, doc, getDoc, getDocs, updateDoc, deleteDoc, 
+        query, where, orderBy, limit, startAfter 
+    } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // ★重要：ご自身のFirebase Configが正しく設定されているか確認してください
+    const firebaseConfig = {
+            apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
+            authDomain: "book-ree.firebaseapp.com",
+            projectId: "book-ree",
+            storageBucket: "book-ree.firebasestorage.app",
+            messagingSenderId: "721168073032",
+            appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
+        };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // グローバル変数
+    window.db = db;
+    let lastDoc = null;
+    let currentBooks = [];
+
+    // --- 認証機能 (簡易) ---
+    window.checkPass = () => {
+        const pass = document.getElementById("admin-pass").value;
+        if(pass === "admin123") { 
+            document.getElementById("login-overlay").style.display = "none";
+            document.getElementById("app").style.display = "block";
+            runSearch(); // 初期ロード
+            
+            // ★追加：統計データの読み込み実行
+            loadStats(); 
+        } else {
+            document.getElementById("login-msg").textContent = "パスワードが違います";
+        }
+    };
+
+    // --- データ取得 ---
+    window.runSearch = async (isMore = false) => {
+        const keyword = document.getElementById("search-input").value.trim();
+        const listEl = document.getElementById("book-list");
+        
+        if (!isMore) {
+            listEl.innerHTML = "";
+            lastDoc = null;
+            currentBooks = [];
+        }
+
+        const constraints = [];
+        const booksRef = collection(db, "books");
+
+        if (keyword) {
+            if(keyword.length > 20 && !keyword.includes(" ")) {
+                 try {
+                     const d = await getDoc(doc(db, "books", keyword));
+                     if(d.exists()) renderRows([ {id:d.id, ...d.data()} ]);
+                     return;
+                 } catch(e){}
+            }
+            constraints.push(orderBy("lastUpdated", "desc"));
+            constraints.push(limit(100)); 
+        } else {
+            constraints.push(orderBy("lastUpdated", "desc"));
+            constraints.push(limit(20));
+            if (lastDoc) constraints.push(startAfter(lastDoc));
+        }
+
+        try {
+            const q = query(booksRef, ...constraints);
+            const snapshot = await getDocs(q);
+            
+            if (!snapshot.empty) {
+                lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            }
+
+            let books = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            if (keyword) {
+                const low = keyword.toLowerCase();
+                books = books.filter(b => 
+                    (b.title && b.title.toLowerCase().includes(low)) ||
+                    (b.authors && b.authors.join("").toLowerCase().includes(low))
+                );
+            }
+
+            currentBooks = isMore ? [...currentBooks, ...books] : books;
+            renderRows(books);
+            document.getElementById("status-bar").textContent = `表示中: ${currentBooks.length}件`;
+
+        } catch (e) {
+            console.error(e);
+            alert("読み込みエラー: " + e.message);
+        }
+    };
+
+    window.loadMore = () => runSearch(true);
+
+    function renderRows(books) {
+        const listEl = document.getElementById("book-list");
+        books.forEach(b => {
+            const tr = document.createElement("tr");
+            tr.id = `row-${b.id}`;
+            
+            let img = b.image || b.imageLinks?.thumbnail;
+            if(!img) img = "https://via.placeholder.com/40x50?text=No";
+            
+            let targetBadges = "";
+            if(b.target && Array.isArray(b.target)) {
+                targetBadges = b.target.map(t => `<span class="badge bg-target">${t}</span>`).join("");
+            }
+            
+            tr.innerHTML = `
+                <td><img src="${img}" class="thumb"></td>
+                <td>
+                    <div style="font-weight:bold; font-size:15px;">${b.title}</div>
+                    <div style="font-size:12px; color:#666;">${b.authors ? b.authors.join(", ") : ""}</div>
+                    <div style="font-size:10px; color:#999;">ID: ${b.id}</div>
+                </td>
+                <td>
+                    <span class="badge bg-study">${b.mainGenre || "未設定"}</span>
+                    ${targetBadges}
+                </td>
+                <td style="font-weight:bold; color:#e67e22;">★ ${b.score || 0}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-sm btn-search" onclick="openEdit('${b.id}')">編集</button>
+                        <button class="btn btn-sm btn-fix" onclick="runSingleSmartFix('${b.id}')">修復</button>
+                    </div>
+                </td>
+            `;
+            listEl.appendChild(tr);
+        });
+    }
+
+    // --- 編集機能 ---
+    window.openEdit = (id) => {
+        const book = currentBooks.find(b => b.id === id);
+        if(!book) return;
+
+        document.getElementById("edit-id").value = book.id;
+        document.getElementById("edit-title").value = book.title;
+        document.getElementById("edit-authors").value = book.authors ? book.authors.join(",") : "";
+        document.getElementById("edit-genre").value = book.mainGenre || "other";
+        document.getElementById("edit-target").value = book.target ? book.target.join(",") : "";
+        document.getElementById("edit-score").value = book.score || 0;
+        document.getElementById("edit-image").value = book.image || "";
+
+        document.getElementById("edit-modal").style.display = "block";
+    };
+
+    window.closeModal = () => {
+        document.getElementById("edit-modal").style.display = "none";
+    };
+
+    window.saveBook = async () => {
+        const id = document.getElementById("edit-id").value;
+        const targetStr = document.getElementById("edit-target").value;
+        
+        const newData = {
+            title: document.getElementById("edit-title").value,
+            authors: document.getElementById("edit-authors").value.split(",").map(s=>s.trim()),
+            mainGenre: document.getElementById("edit-genre").value,
+            target: targetStr ? targetStr.split(",").map(s=>s.trim()) : [],
+            score: parseInt(document.getElementById("edit-score").value, 10),
+            image: document.getElementById("edit-image").value
+        };
+
+        if(confirm("変更を保存しますか？")) {
+            await updateDoc(doc(db, "books", id), newData);
+            alert("保存しました");
+            closeModal();
+            const row = document.getElementById(`row-${id}`);
+            if(row) row.style.opacity = "0.5"; 
+        }
+    };
+
+    window.deleteBook = async () => {
+        const id = document.getElementById("edit-id").value;
+        if(confirm("【警告】本当にこの本をデータベースから削除しますか？\nこの操作は取り消せません。")) {
+            await deleteDoc(doc(db, "books", id));
+            alert("削除しました");
+            closeModal();
+            document.getElementById(`row-${id}`).remove();
+        }
+    };
+
+    // --- V6 ハイブリッド修復ロジック ---
+    const HS_KEYWORDS = [
+        "大学入試", "大学受験", "共通テスト", "センター試験", "大学入", "大学受",
+        "高校生", "高校", "高1", "高2", "高3", 
+        "ターゲット", "シス単", "システム英単語", "英単語ターゲット", "単語王", "鉄壁", "速読英単語", "duo 3.0", "duo3.0",
+        "赤本", "黒本", "青本", "過去問", "教学社",
+        "チャート式", "focus gold", "フォーカスゴールド", "レジェンド", "1対1対応", "プラチカ", "やさしい理系数学", "ハイレベル理系数学",
+        "next stage", "vintage", "scramble", "ネクステ", "スクランブル", "アップグレード", "upgrade", "forest", "evergreen", "透視図", "ポレポレ",
+        "物理のエッセンス", "良問の風", "名問の森", "重要問題集", "重問", "セミナー", "リードα",
+        "山川", "一問一答", "用語集", "標準問題精講", "基礎問題精講", "入門問題精講",
+        "鉄緑会", "東大", "京大", "医学部", "難関",
+        "古文", "漢文", "物理基礎", "化学基礎", "生物基礎", "地学基礎", "数i", "数ii", "数iii", "数a", "数b", "数c", "マドンナ古文", "ゴロゴ"
+    ];
+
+    async function fetchOpenBD(isbn) {
+        if (!isbn) return null;
+        try {
+            const cleanIsbn = isbn.replace(/[^0-9X]/g, '');
+            const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${cleanIsbn}`);
+            const json = await res.json();
+            return json && json[0] ? json[0] : null;
+        } catch (e) { return null; }
+    }
+
+    function determineSmartGenreV6(openBdData, title) {
+        let cCode = null;
+        let target = ['general']; 
+        let mainGenre = 'general';
+
+        if (openBdData && openBdData.summary && openBdData.summary.c_code) {
+            cCode = openBdData.summary.c_code;
+        }
+        if (!cCode && openBdData && openBdData.onix?.DescriptiveDetail?.ProductClassification) {
+            const pc = openBdData.onix.DescriptiveDetail.ProductClassification;
+            const found = pc.find(x => x.ProductClassificationType === '04');
+            if (found) cCode = found.ProductClassificationCode;
+        }
+
+        if (cCode) {
+            const first = cCode.charAt(0);
+            const second = cCode.charAt(1);
+            if (first === '6' || first === '7') mainGenre = 'study';
+            else if (first === '8') mainGenre = 'children';
+            else if (first === '2') mainGenre = 'hobby';
+            else if (first === '1' || first === '9') mainGenre = 'literature';
+            else if (first === '3') mainGenre = 'business';
+            else if (first === '4' || first === '5') mainGenre = 'specialized';
+            
+            switch (second) {
+                case '1': target = ['general', 'university']; break;
+                case '2': target = ['elementary']; break;
+                case '3': target = ['junior_high']; break;
+                case '4': target = ['high_school']; break;
+                case '5': target = ['university', 'general']; break;
+                default: target = ['general'];
+            }
+        }
+
+        const text = (title || "").toLowerCase();
+        
+        if (HS_KEYWORDS.some(k => text.includes(k.toLowerCase()))) {
+            return { target: ['high_school'], genre: 'study', cCode };
+        }
+        if (text.includes("中学") || text.includes("高校入試")) {
+            return { target: ['junior_high'], genre: 'study', cCode };
+        }
+        if (text.includes("小学") || text.includes("中学入試") || text.includes("絵本") || text.includes("図鑑")) {
+            if (text.includes("入試") || text.includes("受験") || text.includes("ドリル")) {
+                return { target: ['elementary'], genre: 'study', cCode };
+            }
+            return { target: ['elementary'], genre: 'children', cCode };
+        }
+
+        if (cCode) return { target, genre: mainGenre, cCode }; 
+        return null;
+    }
+
+    window.runSingleSmartFix = async (id) => {
+        const book = currentBooks.find(b => b.id === id);
+        if(!book) return;
+        
+        if(!confirm(`「${book.title}」に対して\nOpenBD再取得 & V6判定ロジックを実行しますか？`)) return;
+
+        await executeFix(book);
+        alert("完了しました。");
+        document.getElementById(`row-${id}`).style.background = "#e8f8f5";
+    };
+
+    window.runBatchSmartFix = async () => {
+        if(currentBooks.length === 0) return;
+        if(!confirm(`表示中の${currentBooks.length}件すべてに対して\n強力な修復処理を実行しますか？`)) return;
+
+        const log = [];
+        for (const book of currentBooks) {
+            const res = await executeFix(book);
+            if(res) log.push(res);
+        }
+        alert(`完了しました。\n${log.length}件の情報を更新しました。`);
+        runSearch();
+    };
+
+    async function executeFix(book) {
+        const smart = determineSmartGenreV6(null, book.title);
+        if(smart) {
+            const currentGenre = book.mainGenre;
+            const currentTarget = book.target ? book.target.sort().join(",") : "";
+            const newTarget = smart.target.sort().join(",");
+            
+            if (currentGenre !== smart.genre || currentTarget !== newTarget) {
+                console.log(`Fixing: ${book.title}`);
+                await updateDoc(doc(db, "books", book.id), {
+                    mainGenre: smart.genre,
+                    target: smart.target,
+                    genres: [smart.genre, ...smart.target] 
+                });
+                return book.title;
+            }
+        }
+        return null;
+    }
+
+    // --- 統計データ読み込み機能 ---
+    window.loadStats = async () => {
+        try {
+            const docRef = doc(db, "stats", "global");
+            const snapshot = await getDoc(docRef);
+
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+
+                // 1. PVの表示
+                document.getElementById("stat-pv").textContent = (data.page_views || 0).toLocaleString();
+
+                // 2. ジャンル別投票データの整形
+                const genres = [];
+                const labelMap = {
+                    study: "学習参考書",
+                    literature: "文芸",
+                    business: "ビジネス",
+                    specialized: "専門書",
+                    hobby: "趣味・実用",
+                    children: "児童書",
+                    other: "その他"
+                };
+
+                for (const key in data) {
+                    if (key.startsWith("vote_")) {
+                        const rawGenre = key.replace("vote_", "");
+                        genres.push({ 
+                            key: rawGenre,
+                            name: labelMap[rawGenre] || rawGenre, 
+                            count: data[key] 
+                        });
+                    }
+                }
+
+                genres.sort((a, b) => b.count - a.count);
+
+                if (genres.length > 0) {
+                    const maxVal = genres[0].count;
+                    const html = genres.map((g, index) => {
+                        const percent = (g.count / maxVal) * 100;
+                        const color = index < 3 ? '#3498db' : '#bdc3c7'; 
+                        return `
+                            <div style="display:flex; align-items:center; font-size:13px;">
+                                <div style="width:90px; font-weight:bold; text-align:right; padding-right:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${g.name}</div>
+                                <div style="flex:1; background:#f0f0f0; border-radius:4px; height:18px; position:relative;">
+                                    <div style="background:${color}; width:${percent}%; height:100%; border-radius:4px;"></div>
+                                    <span style="position:absolute; right:5px; top:1px; font-size:11px; color:#555;">${g.count}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join("");
+                    document.getElementById("stat-genres").innerHTML = html;
+                } else {
+                    document.getElementById("stat-genres").innerHTML = "<div style='color:#999; font-size:12px;'>まだ投票データがありません</div>";
+                }
+
+            } else {
+                document.getElementById("stat-pv").textContent = "0";
+                document.getElementById("stat-genres").innerHTML = "<div style='color:#999;'>データなし</div>";
+            }
+        } catch (e) {
+            console.error("統計読み込みエラー", e);
+        }
+    };
+</script>
+
+</body>
+</html>

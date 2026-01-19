@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>【管理用】表紙画像 一括取得・修復ツール</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { margin-top: 0; color: #333; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #27ae60; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #219150; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #log { margin-top: 20px; padding: 10px; background: #2c3e50; color: #ecf0f1; border-radius: 4px; height: 300px; overflow-y: scroll; font-family: monospace; }
+        .success { color: #2ecc71; }
+        .warn { color: #f1c40f; }
+        .error { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📚 表紙画像データ 自動修復ツール</h1>
+    <p>データベース内の全本をスキャンし、Google Books APIから最新の「表紙画像(imageLinks)」を取得して保存し直します。</p>
+    <p>※ インターネット接続が必要です。</p>
+    
+    <button id="runBtn" onclick="runImageFix()">修復を開始する</button>
+    <div id="log">ログがここに表示されます...</div>
+</div>
+
+<script type="module">
+    // Firebase設定
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, updateDoc, doc, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // ★あなたご自身のFirebase設定に書き換えてください
+    const firebaseConfig = {
+            apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
+            authDomain: "book-ree.firebaseapp.com",
+            projectId: "book-ree",
+            storageBucket: "book-ree.firebasestorage.app",
+            messagingSenderId: "721168073032",
+            appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
+        };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const logDiv = document.getElementById("log");
+    const runBtn = document.getElementById("runBtn");
+
+    function log(msg, type = "") {
+        const p = document.createElement("div");
+        p.innerHTML = msg;
+        if (type) p.className = type;
+        logDiv.appendChild(p);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    window.runImageFix = async function() {
+        runBtn.disabled = true;
+        log("🚀 処理を開始します...", "warn");
+
+        try {
+            // 1. 全データ取得
+            const snapshot = await getDocs(collection(db, "books"));
+            log(`📚 データベースから ${snapshot.size} 冊の本が見つかりました。解析開始...`);
+
+            let successCount = 0;
+            let skipCount = 0;
+            let errorCount = 0;
+
+            // バッチ処理の準備（Firestoreは一度に500件まで）
+            // 今回はAPIを叩くので、1件ずつ確実に更新していきます
+            
+            for (const docSnap of snapshot.docs) {
+                const book = docSnap.data();
+                const docId = docSnap.id; // これがGoogle BooksのIDのはず
+
+                // IDがGoogle Books IDの形式かチェック（簡易的）
+                if (!docId || docId.length < 5) {
+                    log(`[SKIP] IDが無効です: ${book.title}`, "warn");
+                    continue;
+                }
+
+                try {
+                    // Google Books APIに問い合わせ
+                    const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${docId}`);
+                    if (!response.ok) throw new Error("API Error");
+                    
+                    const data = await response.json();
+                    const volumeInfo = data.volumeInfo;
+
+                    // 画像データがあるか確認
+                    if (volumeInfo.imageLinks) {
+                        const imageLinks = volumeInfo.imageLinks;
+                        
+                        // 画像URLのhttpをhttpsに変換（混在コンテンツ対策）
+                        if(imageLinks.thumbnail) imageLinks.thumbnail = imageLinks.thumbnail.replace('http://', 'https://');
+                        if(imageLinks.smallThumbnail) imageLinks.smallThumbnail = imageLinks.smallThumbnail.replace('http://', 'https://');
+
+                        // Firestore更新
+                        await updateDoc(doc(db, "books", docId), {
+                            imageLinks: imageLinks
+                        });
+                        
+                        log(`[OK] 画像更新: ${book.title}`, "success");
+                        successCount++;
+                    } else {
+                        log(`[なし] APIに画像データがありませんでした: ${book.title}`, "warn");
+                        skipCount++;
+                    }
+
+                } catch (err) {
+                    log(`[APIエラー] ${book.title} (ID:${docId}) - ${err.message}`, "error");
+                    errorCount++;
+                }
+
+                // API制限を避けるため少しウェイトを入れる
+                await new Promise(r => setTimeout(r, 200)); 
+            }
+
+            log(`\n🎉 完了！ 更新: ${successCount}件, スキップ: ${skipCount}件, エラー: ${errorCount}件`, "success");
+
+        } catch (e) {
+            log(`致命的なエラー: ${e.message}`, "error");
+        } finally {
+            runBtn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>

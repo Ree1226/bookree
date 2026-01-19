@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>全ジャンル対応データ診断＆修復ツール</title>
+    <style>
+        body { font-family: "Noto Sans JP", sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; color: #2c3e50; font-size: 24px; }
+        h2 { font-size: 18px; margin-top: 20px; color: #34495e; }
+        
+        .status-panel { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; padding: 8px 0; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { font-weight: bold; }
+        .stat-value { font-family: monospace; font-size: 1.2em; color: #2980b9; }
+
+        button { background: #2ecc71; color: white; border: none; padding: 12px 25px; font-size: 16px; font-weight:bold; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #27ae60; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        
+        #btnAnalyze { background: #3498db; margin-right: 10px; }
+        #btnAnalyze:hover { background: #2980b9; }
+
+        #log { margin-top: 20px; padding: 15px; background: #2c3e50; color: #ecf0f1; height: 400px; overflow-y: scroll; font-family: monospace; border-radius: 4px; font-size: 13px; line-height: 1.5; }
+        .log-info { color: #3498db; }
+        .log-success { color: #2ecc71; }
+        .log-warn { color: #f1c40f; }
+        .log-error { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛠️ 全ジャンル対応 データ診断＆修復ツール</h1>
+    
+    <div class="status-panel">
+        <h2>📊 現在のデータベース状況</h2>
+        <div id="status-content">
+            <p>「データ診断」ボタンを押すと、ジャンルごとの本の冊数をここに表示します。</p>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <button id="btnAnalyze">① データ診断（冊数確認）</button>
+        <button id="btnRun" disabled>② 全ジャンル タグ自動付与を実行</button>
+    </div>
+
+    <div id="log">ログ待機中...</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+            apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
+            authDomain: "book-ree.firebaseapp.com",
+            projectId: "book-ree",
+            storageBucket: "book-ree.firebasestorage.app",
+            messagingSenderId: "721168073032",
+            appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
+        };
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ▼ 全ジャンル対応キーワード定義 ▼
+// サイトのドロップダウンメニューにある全ての項目を網羅しています
+const KEYWORD_MAP = {
+    // ■ 文芸 (literature)
+    mystery: ["ミステリー", "推理", "サスペンス", "探偵", "刑事", "事件", "トリック", "謎解き", "犯人", "殺人", "mystery"],
+    fantasy: ["ファンタジー", "魔法", "異世界", "ドラゴン", "冒険", "fantasy"],
+    romance: ["恋愛", "ラブストーリー", "純愛", "婚活", "恋", "romance"],
+    sf: ["SF", "サイエンス", "宇宙", "ロボット", "AI", "人工知能", "未来", "タイムトラベル"],
+    history: ["歴史", "時代小説", "戦国", "幕末", "江戸", "明治", "史実"],
+    politics: ["政治", "外交", "選挙", "内閣", "官僚"],
+    horror: ["ホラー", "怪談", "幽霊", "呪い", "恐怖"],
+    youth: ["青春", "学校", "部活", "高校生", "中学生"],
+    human: ["ヒューマン", "感動", "家族", "人生", "人間ドラマ"],
+    lightnovel: ["ライトノベル", "ラノベ"],
+    sensual: ["官能"],
+
+    // ■ ビジネス (business)
+    management: ["経営", "マネジメント", "社長", "組織", "戦略", "起業", "リーダー", "MBA"],
+    marketing: ["マーケティング", "広告", "宣伝", "ブランディング", "広報", "SNS", "コピーライティング"],
+    leadership: ["リーダーシップ", "上司", "部下", "マネジャー", "指導"],
+    work: ["仕事術", "効率", "生産性", "話し方", "プレゼン", "思考法", "タイムマネジメント"],
+    finance: ["投資", "株", "FX", "金融", "資産運用", "NISA", "四季報", "ビットコイン"],
+    economy: ["経済", "景気", "円安", "インフレ", "エコノミスト", "財政"],
+    industry: ["業界", "メーカー", "商社", "流通", "IT業界", "自動車"],
+    data: ["データ分析", "統計", "AI活用", "ビッグデータ", "Python"],
+    career: ["キャリア", "転職", "就職", "自己分析", "フリーランス", "副業"],
+
+    // ■ 趣味・実用 (hobby)
+    cooking: ["料理", "レシピ", "弁当", "ごはん", "おかず", "スイーツ", "パン"],
+    parenting: ["育児", "子育て", "しつけ", "教育", "赤ちゃん"],
+    health: ["健康", "ダイエット", "筋トレ", "ストレッチ", "病気", "医療", "メンタル"],
+    beauty: ["美容", "メイク", "スキンケア", "ファッション", "ネイル"],
+    manners: ["マナー", "冠婚葬祭", "作法", "礼儀"],
+    travel: ["旅行", "ガイド", "観光", "温泉", "絶景", "ホテル"],
+    gardening: ["園芸", "ガーデニング", "花", "植物", "盆栽"],
+    sports: ["スポーツ", "野球", "サッカー", "ゴルフ", "テニス", "五輪"],
+    camera: ["カメラ", "写真", "撮影"],
+    railway: ["鉄道", "電車", "駅"],
+    igo_shogi: ["将棋", "囲碁", "チェス"],
+
+    // ■ 専門書 (specialized)
+    humanities: ["人文", "哲学", "思想", "心理学", "歴史学", "考古学", "宗教"],
+    social_science: ["社会科学", "社会学", "法律", "憲法", "政治学", "経済学"],
+    science_tech: ["工学", "理学", "数学", "物理", "化学", "生物", "建築", "プログラミング", "エンジニア", "情報科学"],
+    medical: ["医学", "看護", "薬学", "歯学", "介護"],
+    art: ["芸術", "美術", "デザイン", "アート", "絵画", "音楽"],
+    language: ["語学", "英語", "TOEIC", "英会話", "中国語", "翻訳"],
+    license: ["資格", "試験", "検定", "公務員", "宅建", "簿記"],
+
+    // ■ 児童書 (children)
+    picturebook: ["絵本"],
+    fairytale: ["童話", "昔話", "おとぎ話"],
+    biography: ["伝記", "偉人"],
+    study_manga: ["学習まんが", "学習マンガ"],
+    zukan: ["図鑑"]
+};
+
+// Google Books カテゴリとの対応マップ
+const API_CATEGORY_MAP = {
+    "mystery": "mystery", "detective": "mystery", "crime": "mystery",
+    "fantasy": "fantasy", "magic": "fantasy",
+    "science fiction": "sf",
+    "history": "history", "historical": "history",
+    "business": "management", "economics": "management", "management": "management",
+    "marketing": "marketing",
+    "finance": "finance", "investment": "finance",
+    "cooking": "cooking",
+    "computers": "science_tech", "technology": "science_tech",
+    "art": "art", "design": "art",
+    "music": "art",
+    "medical": "medical"
+};
+
+const logEl = document.getElementById("log");
+const statusContent = document.getElementById("status-content");
+
+function log(msg, type="info") {
+    const div = document.createElement("div");
+    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    div.className = `log-${type}`;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ① データ診断
+document.getElementById("btnAnalyze").addEventListener("click", async () => {
+    const btn = document.getElementById("btnAnalyze");
+    btn.disabled = true;
+    log("データベースをスキャン中...", "info");
+    statusContent.innerHTML = "集計中...";
+
+    try {
+        const snapshot = await getDocs(collection(db, "books"));
+        const total = snapshot.size;
+        
+        // ジャンルごとの集計
+        const counts = {
+            literature: 0, business: 0, hobby: 0, specialized: 0, children: 0, study: 0, other: 0
+        };
+
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const g = d.mainGenre || "other";
+            if (counts[g] !== undefined) counts[g]++;
+            else counts.other++;
+        });
+
+        // 表示更新
+        let html = `<div class="stat-row"><span class="stat-label">総冊数</span><span class="stat-value">${total} 冊</span></div>`;
+        for (const [key, val] of Object.entries(counts)) {
+            let label = key;
+            if(key === 'literature') label = "文芸";
+            if(key === 'business') label = "ビジネス";
+            if(key === 'hobby') label = "趣味・実用";
+            if(key === 'specialized') label = "専門書";
+            if(key === 'children') label = "児童書";
+            if(key === 'study') label = "学習参考書";
+            
+            // 色分け（少ないと赤字）
+            const style = val < 10 ? 'color:red;' : 'color:#2980b9;';
+            html += `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-value" style="${style}">${val} 冊</span></div>`;
+        }
+        statusContent.innerHTML = html;
+        log("集計完了。", "success");
+
+        if (total === 0) {
+            log("【警告】データが0件です。まずは初期データ投入(seed)を行ってください。", "error");
+        } else {
+            document.getElementById("btnRun").disabled = false;
+            log("データが存在します。②のボタンでタグ修復を実行できます。", "success");
+        }
+
+    } catch (e) {
+        console.error(e);
+        log("エラー: " + e.message, "error");
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+// ② 修復実行
+document.getElementById("btnRun").addEventListener("click", async () => {
+    const btn = document.getElementById("btnRun");
+    btn.disabled = true;
+    log("=== タグ修復プロセス開始 ===", "info");
+
+    try {
+        const snapshot = await getDocs(collection(db, "books"));
+        let batch = writeBatch(db);
+        let count = 0;
+        let batchCount = 0;
+        let totalUpdated = 0;
+
+        for (const docSnap of snapshot.docs) {
+            const data = docSnap.data();
+            const title = (data.title || "").toLowerCase();
+            const desc = (data.description || "").toLowerCase();
+            const authors = Array.isArray(data.authors) ? data.authors.join(" ").toLowerCase() : (data.authors || "").toLowerCase();
+            const cats = Array.isArray(data.categories) ? data.categories.join(" ").toLowerCase() : (data.categories || "").toLowerCase();
+            
+            // 検索対象テキスト
+            const fullText = `${title} ${desc} ${authors} ${cats}`;
+            
+            // 現在のタグを取得（なければ空）
+            let currentTags = new Set(data.subGenres || []);
+            const beforeSize = currentTags.size;
+
+            // A. Googleカテゴリからのマッピング
+            for (const [key, val] of Object.entries(API_CATEGORY_MAP)) {
+                if (cats.includes(key)) currentTags.add(val);
+            }
+
+            // B. キーワード全検索（全ジャンル対応）
+            for (const [tagKey, keywords] of Object.entries(KEYWORD_MAP)) {
+                // そのタグが既に付いていなければチェック
+                if (!currentTags.has(tagKey)) {
+                    // いずれかのキーワードを含めばタグ付与
+                    if (keywords.some(k => fullText.includes(k.toLowerCase()))) {
+                        currentTags.add(tagKey);
+                    }
+                }
+            }
+
+            // C. タイトルによる強制補正（特に児童書）
+            if (title.includes("絵本")) currentTags.add("picturebook");
+            if (title.includes("図鑑")) currentTags.add("zukan");
+
+            // 変更があれば更新キューに追加
+            if (currentTags.size > beforeSize) {
+                const newTags = Array.from(currentTags);
+                const ref = doc(db, "books", docSnap.id);
+                batch.update(ref, { subGenres: newTags });
+                
+                // ログを見やすく間引く（全て出すと重いので）
+                // log(`更新: ${data.title.substring(0,10)}... [${Array.from(currentTags).join(",")}]`, "info");
+                
+                count++;
+                batchCount++;
+                totalUpdated++;
+            }
+
+            // 500件ごとにコミット
+            if (batchCount >= 400) {
+                await batch.commit();
+                log(`${count}件 処理済み...`, "info");
+                batch = writeBatch(db);
+                batchCount = 0;
+            }
+        }
+
+        // 残りをコミット
+        if (batchCount > 0) {
+            await batch.commit();
+        }
+
+        log(`=== 完了 ===`, "success");
+        log(`合計 ${totalUpdated} 冊の本に新しいタグ情報を付与しました。`, "success");
+        log(`サイトに戻り、各ジャンルで絞り込みを試してください。`, "success");
+
+    } catch (e) {
+        console.error(e);
+        log("エラー発生: " + e.message, "error");
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+</script>
+</body>
+</html>

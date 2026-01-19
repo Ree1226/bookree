@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Ree</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Fonts (Noto Sans JP + Kanit) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@1,800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <!-- 左側エリア：ロゴ -->
+            <div class="header-left">
+                <span class="brand-logo">BOOK REE</span>
+            </div>
+    
+            <!-- 中央エリア：タイトルと説明 -->
+            <div class="header-center">
+                <h1>みんなで作る本の評価ランキング</h1>
+                <p>購入前に参考になる、共有型ブックレビューサイト</p>
+            </div>
+        </div>
+    </header>
+        
+<main>
+    <div style="text-align: right; margin-bottom: 20px;">
+        <button id="rankingRuleBtn" class="info-btn">
+            <span class="icon">ℹ️</span> ランキングの仕組み
+        </button>
+    </div>
+
+    <!-- ■ 1. 文芸ジャンル -->
+    <section class="genre-section" id="section-literature">
+        <h2>📖 文芸（小説・文学）</h2>
+        <div class="genre-top-area">
+            <div class="chart-wrapper">
+                <canvas id="chart-literature"></canvas>
+            </div>
+            <div class="genre-controls">
+                <div class="control-group">
+                    <label>グラフ表示数</label>
+                    <select id="chart-limit-literature" class="form-select">
+                        <option value="5" selected>Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ランキング基準</label>
+                    <select id="ranking-type-literature" class="form-select">
+                        <option value="score" selected>総合スコア（重み付）</option>
+                        <option value="raw_score">純粋スコア（投票のみ）</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ジャンル絞り込み</label>
+                    <select id="filter-literature" class="form-select">
+                        <option value="all">すべて表示</option>
+                        <option value="mystery">ミステリー</option>
+                        <option value="fantasy">ファンタジー</option>
+                        <option value="romance">恋愛</option>
+                        <option value="sf">SF</option>
+                        <option value="history">歴史・時代</option>
+                        <option value="politics">政治</option>
+                        <option value="horror">ホラー</option>
+                        <option value="youth">青春</option>
+                        <option value="human">ヒューマンドラマ</option>
+                        <option value="lightnovel">ライトノベル</option>
+                        <option value="sensual">官能</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>検索</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="search-literature" placeholder="書名・著者名..." class="form-input">
+                        <button id="btn-search-literature" class="search-btn">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="genre-books-area" id="list-literature"></div>
+    </section>
+
+    <!-- ■ 2. ビジネスジャンル -->
+    <section class="genre-section" id="section-business">
+        <h2>💼 経済・ビジネス</h2>
+        <div class="genre-top-area">
+            <div class="chart-wrapper">
+                <canvas id="chart-business"></canvas>
+            </div>
+            <div class="genre-controls">
+                <div class="control-group">
+                    <label>グラフ表示数</label>
+                    <select id="chart-limit-business" class="form-select">
+                        <option value="5" selected>Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ランキング基準</label>
+                    <select id="ranking-type-business" class="form-select">
+                        <option value="score" selected>総合スコア（重み付）</option>
+                        <option value="raw_score">純粋スコア（投票のみ）</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ジャンル絞り込み</label>
+                    <select id="filter-business" class="form-select">
+                        <option value="all">すべて表示</option>
+                        <option value="management">経営</option>
+                        <option value="marketing">マーケティング</option>
+                        <option value="leadership">リーダーシップ</option>
+                        <option value="work">仕事術</option>
+                        <option value="finance">投資・金融</option>
+                        <option value="economy">経済</option>
+                        <option value="industry">業界研究</option>
+                        <option value="data">データ・AI活用</option>
+                        <option value="career">キャリア（転職・独立）</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>検索</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="search-business" placeholder="書名・著者名..." class="form-input">
+                        <button id="btn-search-business" class="search-btn">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="genre-books-area" id="list-business"></div>
+    </section>
+
+    <!-- ■ 3. 趣味・実用 -->
+    <section class="genre-section" id="section-hobby">
+        <h2>🎨 趣味・実用</h2>
+        <div class="genre-top-area">
+            <div class="chart-wrapper">
+                <canvas id="chart-hobby"></canvas>
+            </div>
+            <div class="genre-controls">
+                <div class="control-group">
+                    <label>グラフ表示数</label>
+                    <select id="chart-limit-hobby" class="form-select">
+                        <option value="5" selected>Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ランキング基準</label>
+                    <select id="ranking-type-hobby" class="form-select">
+                        <option value="score" selected>総合スコア（重み付）</option>
+                        <option value="raw_score">純粋スコア（投票のみ）</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ジャンル絞り込み</label>
+                    <select id="filter-hobby" class="form-select">
+                        <option value="all">すべて表示</option>
+                        <option value="cooking">料理</option>
+                        <option value="parenting">育児</option>
+                        <option value="health">健康</option>
+                        <option value="beauty">美容</option>
+                        <option value="manners">冠婚葬祭・マナー</option>
+                        <option value="travel">旅行</option>
+                        <option value="gardening">園芸</option>
+                        <option value="sports">スポーツ</option>
+                        <option value="camera">カメラ</option>
+                        <option value="railway">鉄道</option>
+                        <option value="igo_shogi">将棋・囲碁</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>検索</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="search-hobby" placeholder="書名・著者名..." class="form-input">
+                        <button id="btn-search-hobby" class="search-btn">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="genre-books-area" id="list-hobby"></div>
+    </section>
+
+    <!-- ■ 4. 専門書 -->
+    <section class="genre-section" id="section-specialized">
+        <h2>🔬 専門書</h2>
+        <div class="genre-top-area">
+            <div class="chart-wrapper">
+                <canvas id="chart-specialized"></canvas>
+            </div>
+            <div class="genre-controls">
+                <div class="control-group">
+                    <label>グラフ表示数</label>
+                    <select id="chart-limit-specialized" class="form-select">
+                        <option value="5" selected>Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ランキング基準</label>
+                    <select id="ranking-type-specialized" class="form-select">
+                        <option value="score" selected>総合スコア（重み付）</option>
+                        <option value="raw_score">純粋スコア（投票のみ）</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ジャンル絞り込み</label>
+                    <select id="filter-specialized" class="form-select">
+                        <option value="all">すべて表示</option>
+                        <option value="humanities">人文科学</option>
+                        <option value="social_science">社会科学</option>
+                        <option value="science_tech">理工学</option>
+                        <option value="medical">医学・看護学</option>
+                        <option value="art">芸術</option>
+                        <option value="language">語学</option>
+                        <option value="license">資格</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>検索</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="search-specialized" placeholder="書名・著者名..." class="form-input">
+                        <button id="btn-search-specialized" class="search-btn">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="genre-books-area" id="list-specialized"></div>
+    </section>
+
+    <!-- ■ 5. 児童書 -->
+    <section class="genre-section" id="section-children">
+        <h2>🧸 児童書</h2>
+        <div class="genre-top-area">
+            <div class="chart-wrapper">
+                <canvas id="chart-children"></canvas>
+            </div>
+            <div class="genre-controls">
+                <div class="control-group">
+                    <label>グラフ表示数</label>
+                    <select id="chart-limit-children" class="form-select">
+                        <option value="5" selected>Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ランキング基準</label>
+                    <select id="ranking-type-children" class="form-select">
+                        <option value="score" selected>総合スコア（重み付）</option>
+                        <option value="raw_score">純粋スコア（投票のみ）</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ジャンル絞り込み</label>
+                    <select id="filter-children" class="form-select">
+                        <option value="all">すべて表示</option>
+                        <option value="picturebook">絵本</option>
+                        <option value="fairytale">童話</option>
+                        <option value="fantasy">ファンタジー</option>
+                        <option value="sf">SF</option>
+                        <option value="mystery">ミステリー</option>
+                        <option value="history">歴史</option>
+                        <option value="nonfiction">ノンフィクション</option>
+                        <option value="poem">詩</option>
+                        <option value="biography">伝記</option>
+                        <option value="study_manga">学習マンガ</option>
+                        <option value="zukan">図鑑</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>検索</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="search-children" placeholder="書名・著者名..." class="form-input">
+                        <button id="btn-search-children" class="search-btn">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="genre-books-area" id="list-children"></div>
+    </section>
+
+    <!-- ■ 6. 学習参考書 -->
+    <section class="genre-section" id="section-study">
+        <h2>✏️ 学習参考書</h2>
+        <div class="genre-top-area">
+            <div class="chart-wrapper">
+                <canvas id="chart-study"></canvas>
+            </div>
+            <div class="genre-controls">
+                <div class="control-group">
+                    <label>グラフ表示数</label>
+                    <select id="chart-limit-study" class="form-select">
+                        <option value="5" selected>Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>ランキング基準</label>
+                    <select id="ranking-type-study" class="form-select">
+                        <option value="score" selected>総合スコア（重み付）</option>
+                        <option value="raw_score">純粋スコア（投票のみ）</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>① 対象・年代を選択</label>
+                    <select id="filter-study-target" class="form-select">
+                        <!-- ★修正点: valueをデータベースの保存値(snake_case)と一致させました -->
+                        <option value="all">すべて表示</option>
+                        <option value="general">一般（社会人）</option>
+                        <option value="university">大学生</option>
+                        <option value="high_school">高校生</option>
+                        <option value="junior_high">中学生</option>
+                        <option value="elementary">小学生</option>
+                        <option value="infant">幼児</option>
+                    </select>
+
+                    <!-- サブカテゴリ（JSで表示制御） -->
+                    <div id="study-sub-container" style="display:none; margin-top:10px;">
+                        <label>② 詳細カテゴリ</label>
+                        <select id="filter-study-sub" class="form-select">
+                            <option value="all">すべて</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>検索</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="search-study" placeholder="書名・著者名..." class="form-input">
+                        <button id="btn-search-study" class="search-btn">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="genre-books-area" id="list-study"></div>
+    </section>
+
+</main>
+
+<script type="module" src="js/main.js"></script>
+
+<!-- ▼ ランキングの仕組みモーダル（詳細版） ▼ -->
+<div id="ranking-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="close-modal">&times;</span>
+        <h2 style="border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px;">
+            📊 ランキングの仕組み
+        </h2>
+        
+        <p style="margin-bottom: 20px;">
+            当サイトでは、ユーザーの皆様からの投票（1〜5点）を集計し、リアルタイムでランキングを作成しています。
+        </p>
+
+        <div style="background-color: #f0f8ff; padding: 15px; border-radius: 8px; border: 1px solid #bdc3c7;">
+            <h3 style="color: #e67e22; margin-top: 0; display: flex; align-items: center;">
+                <span style="font-size: 1.5em; margin-right: 10px;">🏆</span> 
+                ポイント2倍 ブースト対象
+            </h3>
+            <p style="font-size: 0.9em; margin-bottom: 15px;">
+                多くの読者に支持されるべき「話題作」や「名著」を見逃さないよう、以下の条件に該当する本は<strong>点数が2倍</strong>で加算されます。
+            </p>
+            
+            <ul style="list-style: none; padding: 0; font-size: 0.95em; line-height: 1.8;">
+                <li>
+                    <strong>👑 三大主要賞：</strong><br>
+                    <span style="color: #555;">本屋大賞 / 直木賞 / 芥川賞</span>
+                </li>
+                <li style="margin-top: 10px;">
+                    <strong>🎖 エンタメ・ジャンル賞：</strong><br>
+                    <span style="color: #555;">山本周五郎賞 / 吉川英治文学賞（新人賞含む） / 江戸川乱歩賞 / 星雲賞 / このミステリーがすごい！ / 三島由紀夫賞 など</span>
+                </li>
+                <li style="margin-top: 10px;">
+                    <strong>📺 メディア化・話題作：</strong><br>
+                    <span style="color: #555;">映画・ドラマ・アニメ化作品 / ベストセラー（部数突破）</span>
+                </li>
+            </ul>
+        </div>
+
+        <p style="font-size: 0.8em; color: #7f8c8d; margin-top: 20px; text-align: right; line-height: 1.4;">
+            ※Google Booksの登録データ（説明文）に基づき自動判定しています。<br>
+            そのため、<strong>受賞作であっても説明文に記載がない場合はボーナス対象外</strong>となることがあります。<br>
+            あらかじめご了承ください。
+        </p>
+    </div>
+</div>
+
+<!-- 
+    ▼▼▼ 追加：統計データ計測用スクリプト ▼▼▼
+    【重要】必ずご自身のFirebase Configを下記に貼り付けてください。
+-->
+<script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // ---------------------------------------------------------
+    // ★ここに Firebase Config を貼り付けてください
+    // ---------------------------------------------------------
+    const firebaseConfig = {
+    apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
+    authDomain: "book-ree.firebaseapp.com",
+    projectId: "book-ree",
+    storageBucket: "book-ree.firebasestorage.app",
+    messagingSenderId: "721168073032",
+    appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
+};
+
+    // アプリの二重初期化防止
+    let app;
+    if (getApps().length === 0) {
+        // まだ初期化されていない場合のみ初期化
+        // 注意: configが空だとエラーになるため、必ず埋めてください
+        if (firebaseConfig.projectId) {
+            app = initializeApp(firebaseConfig);
+        }
+    } else {
+        // 既に main.js 等で初期化されている場合はそれを使う
+        app = getApps()[0];
+    }
+
+    let db;
+    if (app) {
+        db = getFirestore(app);
+    }
+
+    // ---------------------------------------------------------
+    // 統計更新用関数 (main.js からも呼べるように window に登録)
+    // ---------------------------------------------------------
+    window.logGenreVote = async (genre) => {
+        if (!db) return; // DB未接続なら無視
+        if (!genre) genre = "unknown";
+
+        const statsRef = doc(db, "stats", "global");
+        const fieldName = `vote_${genre}`;
+
+        try {
+            await updateDoc(statsRef, {
+                [fieldName]: increment(1),
+                total_votes: increment(1)
+            });
+            console.log(`[Stats] Vote counted for: ${genre}`);
+        } catch (e) {
+            if (e.code === 'not-found') {
+                await setDoc(statsRef, { [fieldName]: 1, total_votes: 1 });
+            }
+        }
+    };
+
+    // ---------------------------------------------------------
+    // サイト閲覧数 (PV) の自動計測
+    // ---------------------------------------------------------
+    if (db) {
+        window.addEventListener('load', async () => {
+            // セッション内で1回だけカウント（リロード連打対策）
+            if (!sessionStorage.getItem('has_visited_pv')) {
+                const statsRef = doc(db, "stats", "global");
+                try {
+                    await updateDoc(statsRef, {
+                        page_views: increment(1)
+                    });
+                    sessionStorage.setItem('has_visited_pv', 'true');
+                    console.log("[Stats] PV counted.");
+                } catch (e) {
+                    if (e.code === 'not-found') {
+                        await setDoc(statsRef, { page_views: 1 });
+                    }
+                }
+            }
+        });
+    } else {
+        console.warn("[Stats] Firebase Config not found. Statistics are disabled.");
+    }
+</script>
+
+</body>
+</html>

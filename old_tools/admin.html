@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者用：重複統合ツール（最終版）</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f4f4f4; }
+        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .tool-section { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .log-area { background: #eee; padding: 10px; height: 400px; overflow-y: scroll; border: 1px solid #ccc; margin-top: 10px; font-size: 13px; font-family: monospace; }
+        button { cursor: pointer; padding: 10px 20px; font-size: 16px; border: none; border-radius: 4px; }
+        .btn-scan { background-color: #28a745; color: white; font-weight: bold; }
+        .btn-scan:hover { background-color: #218838; }
+        .duplicate-item { border: 2px solid #ffc107; padding: 15px; margin: 10px 0; background: #fff3cd; }
+        .btn-merge { background-color: #dc3545; color: white; margin-top: 10px; padding: 8px 16px; }
+    </style>
+</head>
+<body>
+
+    <h1>🔧 重複統合ツール（最終解決版）</h1>
+
+    <div class="tool-section">
+        <h2>📚 カッコ揺らぎ・重複完全統合</h2>
+        <p>「全角カッコ」と「半角カッコ」の違いを無視して、同じ本を見つけ出します。</p>
+        <button id="detect-duplicates-btn" class="btn-scan">重複をスキャン＆統合</button>
+        <div id="duplicate-results" class="log-area">待機中...</div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { 
+            getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, increment 
+        } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        // ----------------------------------------------------------------
+        // ここに firebaseConfig を貼り付けてください
+        // ----------------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
+            authDomain: "book-ree.firebaseapp.com",
+            projectId: "book-ree",
+            storageBucket: "book-ree.firebasestorage.app",
+            messagingSenderId: "721168073032",
+            appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ★最強の正規化関数：カッコを徹底的に削除
+        const normalize = (str) => {
+            if (!str) return "";
+            return str
+                // 1. NFKC正規化（全角英数を半角に）
+                .normalize('NFKC')
+                // 2. カッコ類をすべて削除（正規表現で指定）
+                .replace(/[()（）]/g, "") 
+                // 3. スペース削除
+                .replace(/\s+/g, "")
+                .toLowerCase();
+        };
+
+        document.getElementById('detect-duplicates-btn').addEventListener('click', async () => {
+            const logArea = document.getElementById('duplicate-results');
+            logArea.innerHTML = 'データベースを読み込み中...\n';
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "books"));
+                const books = [];
+                
+                logArea.innerHTML += `計 ${querySnapshot.size} 冊の本を取得しました。\n解析を開始します...\n\n`;
+
+                querySnapshot.forEach((doc) => {
+                    books.push({ id: doc.id, ...doc.data() });
+                });
+
+                const groups = {};
+                
+                // グループ化処理
+                books.forEach(book => {
+                    const originalTitle = book.title;
+                    const normalizedKey = normalize(originalTitle);
+
+                    // 「鉄道員」の場合のログを特に出力
+                    if (originalTitle.includes("鉄道")) {
+                        logArea.innerHTML += `[解析] "${originalTitle}" \n   -> 変換後: "${normalizedKey}"\n`;
+                    }
+                    
+                    if (normalizedKey) {
+                        if (!groups[normalizedKey]) {
+                            groups[normalizedKey] = [];
+                        }
+                        groups[normalizedKey].push(book);
+                    }
+                });
+
+                const duplicates = Object.values(groups).filter(group => group.length > 1);
+
+                logArea.innerHTML += `\n-----------------------------------\n`;
+                logArea.innerHTML += `スキャン完了: ${duplicates.length} 組の重複が見つかりました。\n`;
+
+                if (duplicates.length === 0) {
+                     logArea.innerHTML += `※もし「鉄道員」が表示されない場合、すでに統合されているか、名前が一致していません。`;
+                     return;
+                }
+
+                duplicates.forEach((group, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = "duplicate-item";
+
+                    // スコアが高い順、またはID順にソート
+                    group.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+                    const master = group[0]; 
+                    const slaves = group.slice(1);
+
+                    let html = `<h3>発見！重複グループ #${index + 1}</h3>`;
+                    
+                    html += `<strong>【残す本 (Master)】</strong><br>
+                             タイトル: ${master.title}<br>
+                             ID: ${master.id} / Score: ${master.score || 0}<br><br>`;
+                    
+                    slaves.forEach(slave => {
+                        html += `<strong>【削除・統合される本】</strong><br>
+                                 タイトル: ${slave.title}<br>
+                                 ID: ${slave.id} / Score: ${slave.score || 0}<br>`;
+                    });
+
+                    const mergeBtn = document.createElement('button');
+                    mergeBtn.textContent = "統合を実行する（確定）";
+                    mergeBtn.className = "btn-merge";
+
+                    mergeBtn.onclick = async () => {
+                        if (!confirm(`「${master.title}」にデータを統合します。よろしいですか？`)) return;
+
+                        try {
+                            let totalScoreToAdd = 0;
+                            slaves.forEach(slave => totalScoreToAdd += (slave.score || 0));
+
+                            // Master更新
+                            const masterRef = doc(db, "books", master.id);
+                            await updateDoc(masterRef, {
+                                score: increment(totalScoreToAdd)
+                            });
+
+                            // Slaves削除
+                            for (const slave of slaves) {
+                                await deleteDoc(doc(db, "books", slave.id));
+                            }
+
+                            alert(`成功！\n${master.title} のスコアが ${master.score} -> ${(master.score || 0) + totalScoreToAdd} になりました。`);
+                            wrapper.remove();
+                        } catch (error) {
+                            console.error(error);
+                            alert("エラー: " + error.message);
+                        }
+                    };
+
+                    wrapper.innerHTML = html;
+                    wrapper.appendChild(mergeBtn);
+                    logArea.appendChild(wrapper);
+                });
+
+            } catch (e) {
+                console.error(e);
+                logArea.innerText += "\nエラーが発生しました: " + e.message;
+            }
+        });
+    </script>
+</body>
+</html>
