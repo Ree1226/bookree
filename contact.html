@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>お問い合わせ - BOOK REE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@1,800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- スタイルシート -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* お問い合わせページ固有のスタイル */
+        body {
+            background-color: #f5f7fa;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 30px auto; /* 上下の余白を調整 */
+            padding: 0 20px;
+        }
+
+        /* ナビゲーションエリア（戻るボタン用） */
+        .nav-area {
+            display: flex;
+            justify-content: flex-start; /* 左寄せ */
+            margin-bottom: 20px;
+        }
+
+        /* 戻るボタンのデザイン */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            color: #555;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            background-color: #fff;
+            border-radius: 30px; /* 丸みをつける */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 浮き上がらせる */
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            background-color: #007bff;
+            color: #fff;
+            transform: translateY(-2px); /* ホバー時に少し浮く */
+            box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+        }
+
+        .back-link span {
+            margin-right: 8px; /* 矢印と文字の間隔 */
+        }
+
+        /* タイトルエリア */
+        .title-area {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-family: "Noto Sans JP", sans-serif;
+            font-size: 1.8rem;
+        }
+
+        .page-description {
+            font-size: 0.9rem;
+            color: #666;
+            margin: 0;
+        }
+
+        /* フォームコンテナ */
+        .form-container {
+            background: #fff;
+            padding: 30px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        iframe {
+            width: 100%;
+            max-width: 640px;
+            height: 800px;
+            border: none;
+            margin: 0 auto;
+            display: block;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー -->
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <a href="index.html" style="text-decoration: none; color: inherit;">
+                    <span class="brand-logo">BOOK REE</span>
+                </a>
+            </div>
+            <div class="header-center">
+                <h1>みんなで作る本の評価ランキング</h1>
+                <p>購入前に参考になる、共有型ブックレビューサイト</p>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- 戻るボタンエリア -->
+        <div class="nav-area">
+            <a href="index.html" class="back-link">
+                <span>←</span> ランキングに戻る
+            </a>
+        </div>
+
+        <!-- タイトルエリア -->
+        <div class="title-area">
+            <h2 class="page-title">お問い合わせ</h2>
+            <p class="page-description">
+                機能の不具合報告や、追加してほしい書籍のリクエストなどはこちらからお願いします。
+            </p>
+        </div>
+
+        <!-- フォームエリア -->
+        <div class="form-container">
+            
+            <!-- ★ここにコピーした埋め込みコードを貼り付け★ -->
+            <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc5UnJ7l5xMvxdmmspWIKOuquWol14fAXuibmHjyAjyMoEFZA/viewform?embedded=true" width="640" height="931" frameborder="0" marginheight="0" marginwidth="0">読み込んでいます…</iframe>        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 BOOK REE. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>
