@@ -346,63 +346,81 @@ function renderBookshelf(genreId, books) {
 }
 
 function updateChart(genreId, books) {
-  const ctx = document.getElementById(`chart-${genreId}`);
-  if (!ctx) return;
-  const limitEl = document.getElementById(`chart-limit-${genreId}`);
-  const displayCount = limitEl ? parseInt(limitEl.value, 10) : 5;
-  const topBooks = books.slice(0, displayCount);
+    const ctx = document.getElementById(`chart-${genreId}`);
+    if (!ctx) return;
+    const limitEl = document.getElementById(`chart-limit-${genreId}`);
+    const displayCount = limitEl ? parseInt(limitEl.value, 10) : 5;
+    const topBooks = books.slice(0, displayCount);
+    
+    const currentType = currentRankingTypes[genreId] || 'score';
+    
+    // ラベル作成（縦グラフ用にタイトルを省略）
+    const labels = topBooks.map(b => b.title.length > 10 ? b.title.substring(0, 10) + '…' : b.title);
+    const scores = topBooks.map(b => b[currentType] !== undefined ? b[currentType] : 0);
   
-  const currentType = currentRankingTypes[genreId] || 'score';
+    if (chartInstances[genreId]) {
+        chartInstances[genreId].destroy();
+    }
+    
+    // カードデザインに合わせて高さを固定
+    const wrapper = ctx.parentElement;
+    if (wrapper) wrapper.style.height = '350px';
   
-  const labels = topBooks.map(b => b.title.length > 12 ? b.title.substring(0, 12) + '...' : b.title);
-  const scores = topBooks.map(b => b[currentType] !== undefined ? b[currentType] : 0);
-
-  if (chartInstances[genreId]) {
-      chartInstances[genreId].destroy();
-  }
+    const barColor = currentType === 'score' ? 'rgba(52, 152, 219, 0.7)' : 'rgba(39, 174, 96, 0.7)'; 
+    const borderColor = currentType === 'score' ? '#2980b9' : '#27ae60';
   
-  let barThicknessStr = 30; 
-  let rowHeight = 55;
-  if (displayCount > 10) { barThicknessStr = 12; rowHeight = 22; }
-  else if (displayCount > 5) { barThicknessStr = 18; rowHeight = 35; }
-  const newHeight = 70 + (topBooks.length * rowHeight);
-  const wrapper = ctx.parentElement;
-  if (wrapper) wrapper.style.height = `${newHeight}px`;
-
-  const barColor = currentType === 'score' ? 'rgba(52, 152, 219, 0.7)' : 'rgba(39, 174, 96, 0.7)'; 
-  const borderColor = currentType === 'score' ? '#2980b9' : '#27ae60';
-
-  chartInstances[genreId] = new Chart(ctx, {
-      type: 'bar',
-      data: {
-          labels: labels,
-          datasets: [{
-              data: scores,
-              backgroundColor: barColor,
-              borderColor: borderColor,
-              borderWidth: 1,
-              barThickness: barThicknessStr, 
-          }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-            x: { beginAtZero: true, ticks: { stepSize: 1 } },
-            y: {
-                ticks: {
-                    font: { size: 14, weight: 'bold' },
-                    color: '#333',
-                    autoSkip: false
-                }
-            }
+    chartInstances[genreId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: scores,
+                backgroundColor: barColor,
+                borderColor: borderColor,
+                borderWidth: 1,
+                maxBarThickness: 50,
+            }]
+        },
+        options: {
+          indexAxis: 'x', // 縦棒グラフ
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+              legend: { display: false },
+              tooltip: {
+                  callbacks: {
+                      title: function(context) {
+                          const index = context[0].dataIndex;
+                          return topBooks[index].title; 
+                      }
+                  }
+              }
+          },
+          scales: {
+              // ★変更点：ここを自動調整に変更
+              y: { 
+                  beginAtZero: true, 
+                  // max: 5,  <-- この固定制限を削除しました
+                  grace: '10%', // ★最高得点の上に10%の余白を作る設定を追加
+                  title: { display: true, text: '獲得スコア' },
+                  ticks: {
+                      stepSize: 1,
+                      font: { weight: 'bold' }
+                  }
+              },
+              x: {
+                  grid: { display: false },
+                  ticks: {
+                      autoSkip: false,
+                      maxRotation: 45,
+                      minRotation: 45
+                  }
+              }
+          }
         }
-      }
-  });
-}
-
+    });
+  }
+    
 function createBookCard(book, rank = null, displayType = 'score') {
   const div = document.createElement("div");
   div.className = "book-card";

@@ -190,13 +190,27 @@ h2 {
     margin-bottom: 30px;
 }
 
-.chart-wrapper {
-    flex: 3;
+/* ★変更点: グラフ用カードスタイルの追加 */
+.chart-card {
+    flex: 3;                 /* 以前のwrapperと同じ比率 */
     min-width: 300px;
-    background: rgba(255,255,255,0.8); /* 少し透けさせる */
-    border: 1px solid rgba(0,0,0,0.05);
-    border-radius: 12px;
-    padding: 15px;
+    background: #fff;        /* 純白の背景 */
+    border-radius: 12px;     /* 角丸 */
+    padding: 20px;           /* 内側の余白 */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08); /* ふんわりとした影 */
+    border: 1px solid rgba(0,0,0,0.03); /* 極薄の枠線 */
+    position: relative;
+    /* フレックスアイテムとしての挙動 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ★変更点: 内部ラッパーはシンプルに */
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* 以前のスタイル（背景色や枠線）は .chart-card に移動しました */
 }
 
 .genre-controls {
@@ -492,4 +506,32 @@ h2 {
     .genre-controls { flex-direction: column; }
     .control-group { flex-basis: 100%; }
     .book-card { min-width: 85vw; max-width: 85vw; }
+}
+
+/* --- ヘッダー下のナビゲーションボタン共通スタイル --- */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;           /* 高さを統一 */
+    padding: 0 16px;        /* 横幅の余白 */
+    background-color: #fff;
+    border: 1px solid #ccc; /* 薄い枠線 */
+    border-radius: 20px;    /* 丸み */
+    text-decoration: none;  /* リンクの下線を消す */
+    color: #555;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-family: inherit;   /* フォントを統一 */
+}
+
+/* ホバー時の動き */
+.action-btn:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    color: #007bff;
 }
