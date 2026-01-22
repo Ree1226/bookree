@@ -349,25 +349,37 @@ function updateChart(genreId, books) {
     const ctx = document.getElementById(`chart-${genreId}`);
     if (!ctx) return;
     const limitEl = document.getElementById(`chart-limit-${genreId}`);
-    const displayCount = limitEl ? parseInt(limitEl.value, 10) : 5;
+    const displayCount = limitEl ? parseInt(limitEl.value, 10) : 10; // デフォルト10に変更
     const topBooks = books.slice(0, displayCount);
     
     const currentType = currentRankingTypes[genreId] || 'score';
     
-    // ラベル作成（縦グラフ用にタイトルを省略）
-    const labels = topBooks.map(b => b.title.length > 10 ? b.title.substring(0, 10) + '…' : b.title);
+    // スマホ判定（画面幅768px以下ならスマホとみなす）
+    const isMobile = window.innerWidth <= 768;
+  
+    // ラベル作成
+    // スマホ(横グラフ)の場合は少し長くても表示しやすいので12文字、PC(縦グラフ)は10文字でカット
+    const cutLength = isMobile ? 12 : 10;
+    const labels = topBooks.map(b => b.title.length > cutLength ? b.title.substring(0, cutLength) + '…' : b.title);
     const scores = topBooks.map(b => b[currentType] !== undefined ? b[currentType] : 0);
   
     if (chartInstances[genreId]) {
         chartInstances[genreId].destroy();
     }
     
-    // カードデザインに合わせて高さを固定
+    // コンテナの高さ設定
+    // 10件表示だと縦に長くなるので、少し高さを確保
     const wrapper = ctx.parentElement;
     if (wrapper) wrapper.style.height = '350px';
   
     const barColor = currentType === 'score' ? 'rgba(52, 152, 219, 0.7)' : 'rgba(39, 174, 96, 0.7)'; 
     const borderColor = currentType === 'score' ? '#2980b9' : '#27ae60';
+  
+    // 軸の設定を動的に切り替え
+    // 縦グラフ(PC): indexAxis='x' → y軸がスコア
+    // 横グラフ(スマホ): indexAxis='y' → x軸がスコア
+    const scoreAxis = isMobile ? 'x' : 'y';
+    const labelAxis = isMobile ? 'y' : 'x';
   
     chartInstances[genreId] = new Chart(ctx, {
         type: 'bar',
@@ -382,7 +394,8 @@ function updateChart(genreId, books) {
             }]
         },
         options: {
-          indexAxis: 'x', // 縦棒グラフ
+          // ★ここで向きを決定
+          indexAxis: isMobile ? 'y' : 'x', 
           responsive: true,
           maintainAspectRatio: false,
           plugins: { 
@@ -397,30 +410,31 @@ function updateChart(genreId, books) {
               }
           },
           scales: {
-              // ★変更点：ここを自動調整に変更
-              y: { 
+              // スコア軸（点数）の設定
+              [scoreAxis]: { 
                   beginAtZero: true, 
-                  // max: 5,  <-- この固定制限を削除しました
-                  grace: '10%', // ★最高得点の上に10%の余白を作る設定を追加
-                  title: { display: true, text: '獲得スコア' },
+                  grace: '10%', // 天井に10%の余白
+                  title: { display: !isMobile, text: '獲得スコア' }, // スマホでは狭いのでタイトル省略
                   ticks: {
                       stepSize: 1,
                       font: { weight: 'bold' }
                   }
               },
-              x: {
+              // ラベル軸（本のタイトル）の設定
+              [labelAxis]: {
                   grid: { display: false },
                   ticks: {
                       autoSkip: false,
-                      maxRotation: 45,
-                      minRotation: 45
+                      // PCの場合は斜めにして詰め込む
+                      maxRotation: isMobile ? 0 : 45,
+                      minRotation: isMobile ? 0 : 45
                   }
               }
           }
         }
     });
   }
-    
+      
 function createBookCard(book, rank = null, displayType = 'score') {
   const div = document.createElement("div");
   div.className = "book-card";
@@ -456,6 +470,7 @@ function createBookCard(book, rank = null, displayType = 'score') {
   const scoreColor = displayType === 'score' ? '#e67e22' : '#27ae60';
   const labelPrefix = '★';
   
+  // ▼▼▼ ここから書き換え ▼▼▼
   div.innerHTML = `
       ${rankHtml}
       <div class="book-item">
@@ -464,9 +479,13 @@ function createBookCard(book, rank = null, displayType = 'score') {
               <div class="book-title" title="${book.title}">${book.title}</div>
               <div class="book-author-text" style="font-size:0.85em; color:#666; margin-bottom:5px;">${authorText}</div>
               <div><span class="current-score" style="color:${scoreColor};">${labelPrefix} ${scoreValue}</span></div>
-              <a href="${amazonUrl}" target="_blank" class="amazon-link-btn" style="margin-top:5px; display:inline-block; font-size:0.8em;">Amazon</a>
+              <!-- ★ここにAmazonボタンがありましたが、削除して下に移動しました -->
           </div>
       </div>
+      
+      <!-- ★移動場所：book-itemの外、rating-areaの前 -->
+      <a href="${amazonUrl}" target="_blank" class="amazon-link-btn">Amazonで見る</a>
+
       <div class="rating-area">
           ${isVoted ? 
              `<div class="voted-message" style="color:#7f8c8d; font-weight:bold; padding:10px 0;">投票済み</div>` : 
@@ -478,6 +497,7 @@ function createBookCard(book, rank = null, displayType = 'score') {
           }
       </div>
   `;
+  // ▲▲▲ 書き換えここまで ▲▲▲
   
   if (!isVoted) {
       div.querySelectorAll(".btn-vote").forEach(btn => {

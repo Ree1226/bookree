@@ -535,3 +535,69 @@ h2 {
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     color: #007bff;
 }
+
+/* =========================================
+   スマホUIの操作性・レイアウト改善（最終完全版）
+   ========================================= */
+   @media (max-width: 768px) {
+
+    /* カード本体 */
+    .book-card {
+        width: 94% !important;
+        max-width: 450px;
+        margin: 0 auto 20px auto;
+        box-sizing: border-box;
+    }
+
+    /* 本の情報エリア */
+    .book-info {
+        min-width: 0 !important;
+        flex: 1;
+        padding-right: 5px;
+    }
+
+    .book-title {
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+        line-height: 1.5;
+    }
+
+    /* ★Amazonボタン（修正箇所） */
+    /* HTML移動により、シンプルな指定で「投票ボタンの上」に配置されます */
+    .amazon-link-btn {
+        display: block !important;       /* ブロック要素にして幅広に */
+        width: 100% !important;          /* 幅いっぱい */
+        margin: 10px 0 5px 0 !important; /* 上下の隙間調整 */
+        padding: 12px 0 !important;      /* 高さを出して押しやすく */
+        background-color: #f0c14b;       /* Amazonっぽい色（お好みで） */
+        color: #111;                     /* 文字色 */
+        border: 1px solid #a88734;       /* 枠線 */
+        border-radius: 4px;              /* 角丸 */
+        text-align: center;
+        text-decoration: none;
+        box-sizing: border-box;
+        font-weight: bold;
+    }
+
+    /* 投票ボタンエリア */
+    .rating-area {
+        width: 100%;
+        margin-top: 5px; /* Amazonボタンとの隙間 */
+    }
+
+    .vote-buttons, .rating-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .vote-btn, .btn-vote {
+        flex: 1;
+        padding: 12px 0;
+        font-size: 16px;
+        border-radius: 6px;
+        text-align: center;
+    }
+}
