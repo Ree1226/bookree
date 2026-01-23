@@ -371,9 +371,23 @@ function updateChart(genreId, books) {
     // 10件表示だと縦に長くなるので、少し高さを確保
     const wrapper = ctx.parentElement;
     if (wrapper) wrapper.style.height = '350px';
-  
-    const barColor = currentType === 'score' ? 'rgba(52, 152, 219, 0.7)' : 'rgba(39, 174, 96, 0.7)'; 
-    const borderColor = currentType === 'score' ? '#2980b9' : '#27ae60';
+      
+    // 各ジャンルのイメージカラー定義（RGB）
+    const genreColorMap = {
+        'literature': '21, 101, 192',   // 文芸：青
+        'business':   '46, 125, 50',    // ビジネス：緑
+        'hobby':      '230, 126, 34',   // 趣味・実用：オレンジ
+        'specialized': '106, 27, 154',   // 専門書：紫
+        'children':   '173, 20, 87',   // 児童書：黄色
+        'study':    '0, 131, 143'      // 専門書：濃いグレー
+    };
+
+    // ジャンルIDに対応する色を取得（未定義ならデフォルトの青）
+    const themeRGB = genreColorMap[genreId] || '52, 152, 219';
+
+    // 色を作成（背景は少し透明、枠線は不透明）
+    const barColor = `rgba(${themeRGB}, 0.7)`;
+    const borderColor = `rgba(${themeRGB}, 1)`;
   
     // 軸の設定を動的に切り替え
     // 縦グラフ(PC): indexAxis='x' → y軸がスコア
@@ -391,6 +405,9 @@ function updateChart(genreId, books) {
                 borderColor: borderColor,
                 borderWidth: 1,
                 maxBarThickness: 50,
+
+                borderRadius: 8,       // ★棒の角を丸くする（数字が大きいほど丸くなる）                
+                borderSkipped: false,  // ★棒の「根元」も丸くして、カプセルみたいに浮かせる
             }]
         },
         options: {

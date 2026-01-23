@@ -233,7 +233,8 @@ h2 {
     flex-basis: 140px;
 }
 .control-group:last-child {
-    flex-basis: 100%; 
+    flex-basis: auto;        /* 自動調整に変更 */    
+    flex-grow: 2;            /* 検索欄は少し広めに確保すると綺麗です */
 }
 
 .genre-controls label {
@@ -280,6 +281,8 @@ h2 {
     cursor: pointer;
     font-weight: bold;
     transition: background 0.2s;
+    white-space: nowrap;  /* 【追加】文字の折り返しを禁止 */    
+    min-width: 80px;      /* 【追加】最低限の幅を確保 */
 }
 .search-btn:hover { background-color: #2980b9; }
 
@@ -311,8 +314,8 @@ h2 {
     border-radius: 10px;
     padding: 15px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-    min-width: 260px; 
-    max-width: 260px;
+    min-width: 200px; 
+    max-width: 200px;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -537,43 +540,71 @@ h2 {
 }
 
 /* =========================================
-   スマホUIの操作性・レイアウト改善（最終完全版）
+   スマホUIの操作性・レイアウト改善（横スクロール最適化版）
    ========================================= */
    @media (max-width: 768px) {
 
-    /* カード本体 */
+    /* カード本体の設定 */
     .book-card {
-        width: 94% !important;
-        max-width: 450px;
-        margin: 0 auto 20px auto;
-        box-sizing: border-box;
+        /* ▼▼▼ 重要な変更点 ▼▼▼ */
+        
+        /* 1. カードの幅を固定（140px程度にすると2.5冊分くらい見えます） */
+        width: 140px !important;
+        min-width: 140px !important;
+        max-width: 140px !important;
+
+        /* 2. 「縮小禁止」の設定（これがないと潰れます） */
+        flex: 0 0 auto !important;
+
+        /* 3. 余白の調整（横スクロール用に右側に隙間を作る） */
+        margin: 0 10px 0 0 !important;
+        
+        /* カード内の余白 */
+        padding: 10px !important;
+        
+        /* ▲▲▲ 変更ここまで ▲▲▲ */
+    }
+
+    /* 画像サイズもカード幅に合わせて調整 */
+    .book-cover {
+        /* カードが小さくなるので、画像も少し小さく調整 */
+        width: auto !important; 
+        height: 100px !important; /* 高さを抑える */
+        margin: 0 auto 10px auto; /* 中央寄せ */
+    }
+    
+    /* 以前の .book-img クラスがあればそれも調整 */
+    .book-img {
+        height: 100px !important;
+        object-fit: contain;
+    }
+
+    /* タイトル文字サイズを少し小さくしてバランスを取る */
+    .book-title {
+        font-size: 0.85rem !important;
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+        line-height: 1.4;
     }
 
     /* 本の情報エリア */
     .book-info {
         min-width: 0 !important;
         flex: 1;
-        padding-right: 5px;
+        padding-right: 0 !important;
     }
 
-    .book-title {
-        white-space: normal !important;
-        overflow-wrap: break-word !important;
-        word-break: break-word !important;
-        line-height: 1.5;
-    }
-
-    /* ★Amazonボタン（修正箇所） */
-    /* HTML移動により、シンプルな指定で「投票ボタンの上」に配置されます */
+    /* ★Amazonボタン（崩れないように調整） */
     .amazon-link-btn {
-        display: block !important;       /* ブロック要素にして幅広に */
-        width: 100% !important;          /* 幅いっぱい */
-        margin: 10px 0 5px 0 !important; /* 上下の隙間調整 */
-        padding: 12px 0 !important;      /* 高さを出して押しやすく */
-        background-color: #f0c14b;       /* Amazonっぽい色（お好みで） */
-        color: #111;                     /* 文字色 */
-        border: 1px solid #a88734;       /* 枠線 */
-        border-radius: 4px;              /* 角丸 */
+        display: block !important;
+        width: 100% !important;
+        margin: 8px 0 5px 0 !important;
+        padding: 8px 0 !important; /* 少し高さを減らす */
+        font-size: 0.7rem !important; /* 文字を少し小さく */
+        background-color: #f0c14b;
+        color: #111;
+        border: 1px solid #a88734;
+        border-radius: 4px;
         text-align: center;
         text-decoration: none;
         box-sizing: border-box;
@@ -583,21 +614,36 @@ h2 {
     /* 投票ボタンエリア */
     .rating-area {
         width: 100%;
-        margin-top: 5px; /* Amazonボタンとの隙間 */
+        margin-top: 5px;
     }
 
     .vote-buttons, .rating-buttons {
         display: flex;
         justify-content: space-between;
-        gap: 8px;
+        gap: 4px; /* 隙間を詰める */
         width: 100%;
     }
 
     .vote-btn, .btn-vote {
         flex: 1;
-        padding: 12px 0;
-        font-size: 16px;
-        border-radius: 6px;
+        padding: 8px 0 !important;
+        font-size: 0.75rem !important; /* 文字サイズ調整 */
+        border-radius: 4px;
         text-align: center;
     }
+
+    /* ▼▼▼ 追加：点数表示の強制一行化 ▼▼▼ */
+    .current-score {
+        display: block !important;       /* 横幅いっぱいに広げる */
+        width: 100% !important;          /* 確実に幅を確保 */
+        white-space: nowrap !important;  /* 【重要】改行を絶対に禁止する */
+        text-align: center !important;   /* 中央揃えで見やすく */
+        
+        /* フォントサイズ調整：カード幅140pxに収まるように少し小さく */
+        font-size: 0.9rem !important;    
+        
+        margin: 5px 0 !important;        /* Amazonボタンとの隙間を調整 */
+        padding: 2px 0 !important;       /* 上下の余白 */
+    }
+    
 }
