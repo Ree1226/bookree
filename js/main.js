@@ -127,6 +127,11 @@ window.addEventListener('DOMContentLoaded', () => {
         setupGenreSection(genre.id);
     });
     initModal();
+
+    // ▼▼▼ 2026年ランキングの初期化 ▼▼▼
+    isWebSearching['2026'] = false;
+    currentRankingTypes['2026'] = 'score';
+    setup2026Section(); // ※この関数をファイルの最後に追加します
 });
 
 function isAwardWinner(data) {
@@ -786,133 +791,146 @@ function determineSmartGenre(openBdData, title) {
  * 修正点：管理者用グラフへの通知処理を追加
  */
 async function voteForNewBook(book, points, cardElement) {
-  const info = book.volumeInfo || {};
-  const title = info.title || "タイトル不明";
-  const googleId = book.id;
+    const info = book.volumeInfo || {};
+    const title = info.title || "タイトル不明";
+    const googleId = book.id;
+    
+    const storageKey = `voted_${googleId}`;
+    if (localStorage.getItem(storageKey)) {
+        alert("この本にはすでに投票済みです");
+        return;
+    }
   
-  const storageKey = `voted_${googleId}`;
-  if (localStorage.getItem(storageKey)) {
-      alert("この本にはすでに投票済みです");
-      return;
+    const isBonus = isAwardWinner(info);
+    const rawPoints = points;
+    const weightedPoints = isBonus ? points * 2 : points;
+  
+    localStorage.setItem(storageKey, "true");
+    const ratingArea = cardElement.querySelector(".rating-area");
+    if (ratingArea) {
+        const msg = isBonus ? `Thanks! (+${weightedPoints}) 🏆 Award Bonus!` : `Thanks! (+${rawPoints})`;
+        ratingArea.innerHTML = `<div class="voted-message" style="color:#e67e22; font-weight:bold; padding:10px 0;">${msg}</div>`;
+        const scoreSpan = cardElement.querySelector(".current-score");
+        if(scoreSpan) scoreSpan.textContent = `★ ${weightedPoints}`; 
+    }
+  
+    try {
+        const searchKey = normalize(title);
+        let targetDocId = googleId;
+        let isMerge = false;
+  
+        const booksRef = collection(db, "books");
+        const q1 = query(booksRef, where("searchKey", "==", searchKey));
+        const snap1 = await getDocs(q1);
+  
+        if (!snap1.empty) {
+            targetDocId = snap1.docs[0].id;
+            isMerge = true;
+        } else {
+            const q2 = query(booksRef, where("title", "==", title));
+            const snap2 = await getDocs(q2);
+            if (!snap2.empty) {
+                targetDocId = snap2.docs[0].id;
+                isMerge = true;
+            }
+        }
+  
+        // 1. Google Books情報で仮構築 (Fallback用)
+        const struct = analyzeBookStructure(info);
+        let finalGenre = struct.mainGenre;
+        let finalTarget = struct.target;
+        let finalCCode = null;
+  
+        // ▼▼▼ 追加：年の抽出ロジック ▼▼▼
+        const pDate = info.publishedDate || "";
+        let pYear = null;
+        if (pDate.length >= 4) {
+            const y = parseInt(pDate.substring(0, 4));
+            if (!isNaN(y)) pYear = y;
+        }
+        // ▲▲▲ ----------------------- ▲▲▲
+  
+        // 2. OpenBDで正確な情報を取得し、V6ロジックで判定
+        let isbn = null;
+        if (info.industryIdentifiers) {
+            const found = info.industryIdentifiers.find(id => id.type === "ISBN_13") 
+                       || info.industryIdentifiers.find(id => id.type === "ISBN_10");
+            if(found) isbn = found.identifier;
+        }
+  
+        if (isbn) {
+            try {
+                const cleanIsbn = isbn.replace(/[^0-9X]/g, '');
+                const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${cleanIsbn}`);
+                const json = await res.json();
+                const openBdData = json && json[0] ? json[0] : null;
+  
+                // ★最強ロジック呼び出し
+                const smartResult = determineSmartGenre(openBdData, title);
+                
+                if (smartResult) {
+                    console.log(`Smart Genre Determined:`, smartResult);
+                    finalGenre = smartResult.genre;
+                    finalTarget = smartResult.target;
+                    finalCCode = smartResult.cCode;
+                }
+            } catch (e) {
+                console.warn("OpenBD fetch failed, using Google fallback:", e);
+            }
+        }
+  
+        const docRef = doc(db, "books", targetDocId);
+        const updateData = {
+            title: title,
+            searchKey: searchKey,
+            score: increment(weightedPoints),
+            raw_score: increment(rawPoints),
+            lastUpdated: serverTimestamp()
+        };
+  
+        if (!isMerge) {
+            Object.assign(updateData, {
+                authors: info.authors || ["著者不明"],
+                description: info.description || "",
+                image: info.imageLinks?.thumbnail || "",
+                categories: info.categories || [],
+                
+                // ▼▼▼ 修正：日付と年の両方を保存 ▼▼▼
+                publishedDate: pDate,
+                publishedYear: pYear,
+                
+                // 確定したジャンル情報を保存
+                mainGenre: finalGenre,
+                target: finalTarget,
+                subGenres: struct.subGenres, // Google情報由来のサブジャンルは維持
+                cCode: finalCCode || null,
+                
+                // 旧互換用
+                genres: [finalGenre, ...struct.subGenres],
+                targetGenres: finalTarget, 
+                votedUsers: []
+            });
+        }
+  
+        await setDoc(docRef, updateData, { merge: true });
+        console.log(`投票完了: ${title}`);
+  
+        // ▼▼▼ 追加: 管理者画面のグラフ更新用フック ▼▼▼
+        // これにより、新規登録時のジャンルもグラフに即時反映されます
+        if (window.logGenreVote && finalGenre) {
+            window.logGenreVote(finalGenre);
+        }
+        // ▲▲▲ --------------------------------------- ▲▲▲
+  
+    } catch (e) {
+        console.error("新規投票エラー:", e);
+        localStorage.removeItem(storageKey);
+        const ratingArea = cardElement.querySelector(".rating-area");
+        if(ratingArea) ratingArea.innerHTML = `<span style="color:red; font-size:12px;">エラーが発生しました</span>`;
+        alert("投票に失敗しました。通信環境を確認してください。");
+    }
   }
-
-  const isBonus = isAwardWinner(info);
-  const rawPoints = points;
-  const weightedPoints = isBonus ? points * 2 : points;
-
-  localStorage.setItem(storageKey, "true");
-  const ratingArea = cardElement.querySelector(".rating-area");
-  if (ratingArea) {
-      const msg = isBonus ? `Thanks! (+${weightedPoints}) 🏆 Award Bonus!` : `Thanks! (+${rawPoints})`;
-      ratingArea.innerHTML = `<div class="voted-message" style="color:#e67e22; font-weight:bold; padding:10px 0;">${msg}</div>`;
-      const scoreSpan = cardElement.querySelector(".current-score");
-      if(scoreSpan) scoreSpan.textContent = `★ ${weightedPoints}`; 
-  }
-
-  try {
-      const searchKey = normalize(title);
-      let targetDocId = googleId;
-      let isMerge = false;
-
-      const booksRef = collection(db, "books");
-      const q1 = query(booksRef, where("searchKey", "==", searchKey));
-      const snap1 = await getDocs(q1);
-
-      if (!snap1.empty) {
-          targetDocId = snap1.docs[0].id;
-          isMerge = true;
-      } else {
-          const q2 = query(booksRef, where("title", "==", title));
-          const snap2 = await getDocs(q2);
-          if (!snap2.empty) {
-              targetDocId = snap2.docs[0].id;
-              isMerge = true;
-          }
-      }
-
-      // 1. Google Books情報で仮構築 (Fallback用)
-      const struct = analyzeBookStructure(info);
-      let finalGenre = struct.mainGenre;
-      let finalTarget = struct.target;
-      let finalCCode = null;
-
-      // 2. OpenBDで正確な情報を取得し、V6ロジックで判定
-      let isbn = null;
-      if (info.industryIdentifiers) {
-          const found = info.industryIdentifiers.find(id => id.type === "ISBN_13") 
-                     || info.industryIdentifiers.find(id => id.type === "ISBN_10");
-          if(found) isbn = found.identifier;
-      }
-
-      if (isbn) {
-          try {
-              const cleanIsbn = isbn.replace(/[^0-9X]/g, '');
-              const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${cleanIsbn}`);
-              const json = await res.json();
-              const openBdData = json && json[0] ? json[0] : null;
-
-              // ★最強ロジック呼び出し
-              const smartResult = determineSmartGenre(openBdData, title);
-              
-              if (smartResult) {
-                  console.log(`Smart Genre Determined:`, smartResult);
-                  finalGenre = smartResult.genre;
-                  finalTarget = smartResult.target;
-                  finalCCode = smartResult.cCode;
-              }
-          } catch (e) {
-              console.warn("OpenBD fetch failed, using Google fallback:", e);
-          }
-      }
-
-      const docRef = doc(db, "books", targetDocId);
-      const updateData = {
-          title: title,
-          searchKey: searchKey,
-          score: increment(weightedPoints),
-          raw_score: increment(rawPoints),
-          lastUpdated: serverTimestamp()
-      };
-
-      if (!isMerge) {
-          Object.assign(updateData, {
-              authors: info.authors || ["著者不明"],
-              description: info.description || "",
-              image: info.imageLinks?.thumbnail || "",
-              categories: info.categories || [],
-              
-              // 確定したジャンル情報を保存
-              mainGenre: finalGenre,
-              target: finalTarget,
-              subGenres: struct.subGenres, // Google情報由来のサブジャンルは維持
-              cCode: finalCCode || null,
-              
-              // 旧互換用
-              genres: [finalGenre, ...struct.subGenres],
-              targetGenres: finalTarget, 
-              votedUsers: []
-          });
-      }
-
-      await setDoc(docRef, updateData, { merge: true });
-      console.log(`投票完了: ${title}`);
-
-      // ▼▼▼ 追加: 管理者画面のグラフ更新用フック ▼▼▼
-      // これにより、新規登録時のジャンルもグラフに即時反映されます
-      if (window.logGenreVote && finalGenre) {
-          window.logGenreVote(finalGenre);
-      }
-      // ▲▲▲ --------------------------------------- ▲▲▲
-
-  } catch (e) {
-      console.error("新規投票エラー:", e);
-      localStorage.removeItem(storageKey);
-      const ratingArea = cardElement.querySelector(".rating-area");
-      if(ratingArea) ratingArea.innerHTML = `<span style="color:red; font-size:12px;">エラーが発生しました</span>`;
-      alert("投票に失敗しました。通信環境を確認してください。");
-  }
-}
-
+  
 function initModal() {
   const modal = document.getElementById("ranking-modal"); 
   const btn = document.getElementById("rankingRuleBtn");
@@ -1059,4 +1077,125 @@ function analyzeBookStructure(info) {
       subGenres: Array.from(subs),
       target: Array.from(targets) 
   };
+}
+
+/**
+ * 2026年セクション専用のセットアップ関数
+ * (年別検索 + ジャンル絞り込み + 並び替え対応)
+ */
+function setup2026Section() {
+    const sectionId = '2026';
+    const listElement = document.getElementById(`list-${sectionId}`);
+    if (!listElement) return;
+  
+    let unsubscribe = null;
+  
+    const fetchAndRender = () => {
+        if (unsubscribe) unsubscribe();
+  
+        const container = document.getElementById(`list-${sectionId}`);
+        if(container) container.innerHTML = '<p style="padding:20px; text-align:center;">読み込み中...</p>';
+  
+        const sortField = currentRankingTypes[sectionId] || 'score';
+        const filterEl = document.getElementById(`filter-${sectionId}`);
+        const selectedGenre = filterEl ? filterEl.value : 'all';
+
+        // クエリの構築
+        const constraints = [];
+        
+        // 1. 年の指定 (必須)
+        constraints.push(where("publishedYear", "==", 2026));
+        
+        // 2. ジャンル絞り込み (選択されている場合)
+        if (selectedGenre !== 'all') {
+            constraints.push(where("mainGenre", "==", selectedGenre));
+        }
+
+        // 3. 並び替え
+        constraints.push(orderBy(sortField, "desc"));
+        constraints.push(limit(50));
+  
+        const q = query(collection(db, "books"), ...constraints);
+  
+        unsubscribe = onSnapshot(q, (snapshot) => {
+            const books = [];
+            snapshot.forEach(doc => {
+                books.push({ id: doc.id, ...doc.data() });
+            });
+            
+            loadedBooks[sectionId] = books;
+            
+            // 既存のフィルタ・描画関数を再利用
+            // (genreId='2026' として渡すことで既存ロジックが動くように設計済み)
+            applyLocalFilter(sectionId);
+            
+        }, (error) => {
+            console.error("Firebase Error (2026):", error);
+            const container = document.getElementById(`list-${sectionId}`);
+            if(error.code === 'failed-precondition') {
+               // インデックス不足のエラーが出た場合（複合クエリのため初回は必須）
+               const msg = "【管理者用メッセージ】<br>2026年ランキングのインデックスが必要です。<br>F12コンソールのURLをクリックして作成してください。";
+               if(container) container.innerHTML = `<p style="padding:20px; color:red; text-align:center; font-weight:bold;">${msg}</p>`;
+            } else {
+               if(container) container.innerHTML = '<p style="padding:20px; text-align:center;">エラーが発生しました。</p>';
+            }
+        });
+    };
+  
+    // 初回実行
+    fetchAndRender();
+  
+    // --- イベントリスナー設定 ---
+    
+    // ランキング基準（総合/純粋）切り替え
+    const rankingTypeSelect = document.getElementById(`ranking-type-${sectionId}`);
+    if (rankingTypeSelect) {
+        rankingTypeSelect.addEventListener("change", (e) => {
+            currentRankingTypes[sectionId] = e.target.value;
+            isWebSearching[sectionId] = false;
+            fetchAndRender(); 
+        });
+    }
+  
+    // ジャンル絞り込み切り替え
+    const filterSelect = document.getElementById(`filter-${sectionId}`);
+    if (filterSelect) {
+        filterSelect.addEventListener("change", () => {
+            fetchAndRender();
+        });
+    }
+
+    // グラフ表示数切り替え
+    const limitSelect = document.getElementById(`chart-limit-${sectionId}`);
+    if (limitSelect) {
+        limitSelect.addEventListener("change", () => {
+            // クエリし直し不要、ローカルのフィルタだけでOK
+            applyLocalFilter(sectionId);
+        });
+    }
+  
+    // 検索ボックス
+    const searchInput = document.getElementById(`search-${sectionId}`);
+    const searchBtn = document.getElementById(`btn-search-${sectionId}`);
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            isWebSearching[sectionId] = false;
+            applyLocalFilter(sectionId);
+        });
+        searchInput.addEventListener("keydown", async (e) => {
+            if (e.key === "Enter") {
+                const keyword = searchInput.value.trim();
+                if (keyword) {
+                    e.preventDefault();
+                    await searchExternalBooks(sectionId, keyword);
+                }
+            }
+        });
+        if (searchBtn) {
+            searchBtn.addEventListener("click", async () => {
+                const keyword = searchInput.value.trim();
+                if (keyword) await searchExternalBooks(sectionId, keyword);
+            });
+        }
+    }
 }

@@ -44,7 +44,58 @@
             </a>
     
         </div>
-        
+    
+    <!-- ■ 2026年 最新トレンド -->
+    <section class="genre-section" id="section-2026">
+        <h2>🔥 2026年 最新トレンド (Top 10)</h2>
+        <div class="genre-top-area">
+            <div class="chart-wrapper">
+                <canvas id="chart-2026"></canvas>
+            </div>
+            <div class="genre-controls">
+                <!-- グラフ表示数 -->
+                <div class="control-group">
+                    <label>グラフ表示数</label>
+                    <select id="chart-limit-2026" class="chart-limit-select">
+                        <option value="5">Top 5</option>
+                        <option value="10" selected>Top 10</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <!-- ランキング基準 -->
+                <div class="control-group">
+                    <label>ランキング基準</label>
+                    <select id="ranking-type-2026" class="form-select">
+                        <option value="score" selected>総合スコア（重み付）</option>
+                        <option value="raw_score">純粋スコア（投票のみ）</option>
+                    </select>
+                </div>
+                <!-- ジャンル絞り込み（2026年の中でさらにジャンルを絞る） -->
+                <div class="control-group">
+                    <label>ジャンル絞り込み</label>
+                    <select id="filter-2026" class="form-select">
+                        <option value="all">すべて表示</option>
+                        <option value="literature">文芸</option>
+                        <option value="business">ビジネス</option>
+                        <option value="hobby">趣味・実用</option>
+                        <option value="specialized">専門書</option>
+                        <option value="children">児童書</option>
+                        <option value="study">学習参考書</option>
+                    </select>
+                </div>
+                <!-- 検索 -->
+                <div class="control-group">
+                    <label>検索</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="search-2026" placeholder="書名・著者名..." class="form-input">
+                        <button id="btn-search-2026" class="search-btn">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="genre-books-area" id="list-2026"></div>
+    </section>
+
     <!-- ■ 1. 文芸ジャンル -->
     <section class="genre-section" id="section-literature">
         <h2>📖 文芸（小説・文学）</h2>
