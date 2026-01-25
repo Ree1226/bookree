@@ -223,7 +223,7 @@
         }
     };
 
-    // --- データ取得 ---
+    // --- データ取得（検索ロジック：前方一致・省エネ確定版） ---
     window.runSearch = async (isMore = false) => {
         const keyword = document.getElementById("search-input").value.trim();
         const listEl = document.getElementById("book-list");
@@ -238,16 +238,31 @@
         const booksRef = collection(db, "books");
 
         if (keyword) {
-            if(keyword.length > 20 && !keyword.includes(" ")) {
+            // ① IDとして直接検索してみる（コスト1回）
+            if(keyword.length > 5 && !keyword.includes(" ")) {
                  try {
                      const d = await getDoc(doc(db, "books", keyword));
-                     if(d.exists()) renderRows([ {id:d.id, ...d.data()} ]);
-                     return;
-                 } catch(e){}
+                     if(d.exists()) {
+                         const book = {id:d.id, ...d.data()};
+                         currentBooks = [book];
+                         renderRows(currentBooks);
+                         document.getElementById("status-bar").textContent = `ID検索ヒット: 1件`;
+                         return; 
+                     }
+                 } catch(e) {}
             }
-            constraints.push(orderBy("lastUpdated", "desc"));
-            constraints.push(limit(100)); 
+
+            // ② タイトル前方一致検索（コスト＝ヒット数のみ）
+            // ※「タイトルの最初」から入力する必要があります
+            constraints.push(where("title", ">=", keyword));
+            constraints.push(where("title", "<=", keyword + "\uf8ff"));
+            
+            // 前方一致検索時はタイトルの辞書順になります
+            constraints.push(orderBy("title"));
+            constraints.push(limit(20)); 
+
         } else {
+            // キーワードなし（通常表示）は「更新順」
             constraints.push(orderBy("lastUpdated", "desc"));
             constraints.push(limit(20));
             if (lastDoc) constraints.push(startAfter(lastDoc));
@@ -261,19 +276,24 @@
                 lastDoc = snapshot.docs[snapshot.docs.length - 1];
             }
 
-            let books = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            const books = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-            if (keyword) {
-                const low = keyword.toLowerCase();
-                books = books.filter(b => 
-                    (b.title && b.title.toLowerCase().includes(low)) ||
-                    (b.authors && b.authors.join("").toLowerCase().includes(low))
-                );
+            // 検索結果が0件の場合のヒント（アラートではなくログのみ）
+            if (keyword && books.length === 0) {
+                console.log("見つかりませんでした。前方一致のため、タイトルの先頭から正確に入力してください。");
             }
 
             currentBooks = isMore ? [...currentBooks, ...books] : books;
             renderRows(books);
-            document.getElementById("status-bar").textContent = `表示中: ${currentBooks.length}件`;
+            
+            const statusText = keyword 
+                ? `検索結果: ${currentBooks.length}件` 
+                : `表示中: ${currentBooks.length}件`;
+            document.getElementById("status-bar").textContent = statusText;
+
+            // 検索時は「さらに読み込む」ボタンを隠す
+            const loadBtn = document.querySelector("button[onclick='loadMore()']");
+            if(loadBtn) loadBtn.style.display = keyword ? "none" : "inline-block";
 
         } catch (e) {
             console.error(e);
