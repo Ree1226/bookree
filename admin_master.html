@@ -118,6 +118,7 @@
                     <th style="width:60px;">IMG</th>
                     <th>タイトル / 著者</th>
                     <th>ジャンル情報</th>
+                    <th style="width:80px;">出版年</th>
                     <th style="width:80px;">スコア</th>
                     <th style="width:140px;">操作</th>
                 </tr>
@@ -162,6 +163,10 @@
         <div class="form-group">
             <label>ターゲット (カンマ区切り, 例: high_school,general)</label>
             <input type="text" id="edit-target">
+        </div>
+        <div class="form-group">    
+            <label>出版年 (例: 2026, 2026-01-01)</label>    
+            <input type="number" id="edit-publishedYear">
         </div>
         <div class="form-group">
             <label>スコア</label>
@@ -303,6 +308,10 @@
                     <span class="badge bg-study">${b.mainGenre || "未設定"}</span>
                     ${targetBadges}
                 </td>
+                <!-- ★追加: 出版年を表示 -->
+                <td style="font-size:13px; color:#555;">
+                    ${b.publishedYear || "-"}
+                </td>
                 <td style="font-weight:bold; color:#e67e22;">★ ${b.score || 0}</td>
                 <td>
                     <div class="actions">
@@ -325,6 +334,7 @@
         document.getElementById("edit-authors").value = book.authors ? book.authors.join(",") : "";
         document.getElementById("edit-genre").value = book.mainGenre || "other";
         document.getElementById("edit-target").value = book.target ? book.target.join(",") : "";
+        document.getElementById("edit-publishedYear").value = book.publishedYear || "";
         document.getElementById("edit-score").value = book.score || 0;
         document.getElementById("edit-image").value = book.image || "";
 
@@ -344,7 +354,7 @@
             authors: document.getElementById("edit-authors").value.split(",").map(s=>s.trim()),
             mainGenre: document.getElementById("edit-genre").value,
             target: targetStr ? targetStr.split(",").map(s=>s.trim()) : [],
-            score: parseInt(document.getElementById("edit-score").value, 10),
+            publishedYear: parseInt(document.getElementById("edit-publishedYear").value, 10) || null,            score: parseInt(document.getElementById("edit-score").value, 10),
             image: document.getElementById("edit-image").value
         };
 

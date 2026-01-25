@@ -536,8 +536,9 @@ async function searchExternalBooks(genreId, keyword) {
   container.innerHTML = `<p style="padding:20px; text-align:center; width:100%;">🔍 検索中...</p>`;
 
   try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=40`);
-      const data = await res.json();
+        const apiKey = "AIzaSyCL88yBdIcEZIh_Zrw-NOmy-QtRCNB0cns";
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=40&key=${apiKey}`);      
+        const data = await res.json();
 
       container.innerHTML = ""; 
 
