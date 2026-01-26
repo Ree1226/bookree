@@ -379,6 +379,7 @@ function updateChart(genreId, books) {
       
     // 各ジャンルのイメージカラー定義（RGB）
     const genreColorMap = {
+        '2026': '191, 33, 33',  // ★修正：落ち着いたルビーレッド
         'literature': '21, 101, 192',   // 文芸：青
         'business':   '46, 125, 50',    // ビジネス：緑
         'hobby':      '230, 126, 34',   // 趣味・実用：オレンジ

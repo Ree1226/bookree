@@ -179,6 +179,19 @@ h2 {
 }
 #section-study h2 { border-color: #00bcd4; color: #00838f; }
 
+/* ■ 2026年 最新トレンド：落ち着いたルビーレッド */
+#section-2026 {
+    background-color: #fdfdfd; /* ベースは白に近い */
+    /* 文芸(#e3f2fd)に対応する、ごく薄い桜色(#ffebee)を使用 */
+    background-image: linear-gradient(to bottom, #ffebee 0%, #ffffff 150px);
+}
+
+#section-2026 h2 {
+    /* 枠線：アクセントとなる少し明るめの赤 */
+    border-color: #ef5350; 
+    /* 文字：前回決定した、深みのある落ち着いた赤 */
+    color: #bf2121; 
+}
 
 /* =========================================
    コントロールエリア（グラフ＆操作パネル）
