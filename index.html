@@ -481,7 +481,7 @@
     storageBucket: "book-ree.firebasestorage.app",
     messagingSenderId: "721168073032",
     appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
-};
+    };
 
     // アプリの二重初期化防止
     let app;
@@ -521,6 +521,25 @@
             if (e.code === 'not-found') {
                 await setDoc(statsRef, { [fieldName]: 1, total_votes: 1 });
             }
+        }
+    };
+
+    window.trackClick = async (bookId) => {
+        if (!db) return; 
+        if (!bookId) {
+             console.error("No bookId provided for tracking.");
+             return;
+        }
+
+        // 書籍ドキュメント内の 'click_count' フィールドを +1 する
+        const bookRef = doc(db, "books", bookId);
+        try {
+            await updateDoc(bookRef, {
+                click_count: increment(1)
+            });
+            console.log(`[Analytics] Click counted for book: ${bookId}`);
+        } catch (e) {
+            console.error("Error tracking click:", e);
         }
     };
 

@@ -507,7 +507,7 @@ function createBookCard(book, rank = null, displayType = 'score') {
       </div>
       
       <!-- ★移動場所：book-itemの外、rating-areaの前 -->
-      <a href="${amazonUrl}" target="_blank" class="amazon-link-btn">Amazonで見る</a>
+      <a href="${amazonUrl}" target="_blank" class="amazon-link-btn" onclick="trackClick('${book.id}')">Amazonで見る</a>
 
       <div class="rating-area">
           ${isVoted ? 

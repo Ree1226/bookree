@@ -107,6 +107,7 @@
     <div class="toolbar">
         <input type="text" id="search-input" class="search-box" placeholder="タイトル、著者、IDで検索...">
         <button class="btn btn-search" onclick="runSearch()">🔍 検索</button>
+        <button class="btn" style="background:#e67e22; margin-left:10px;" onclick="runSortByClicks()">🔥 注目度順 (クリック数)</button>
         <div style="flex:1;"></div>
         <button class="btn btn-fix" onclick="runBatchSmartFix()">⚡️ 表示中の本を一括修復 (V6)</button>
     </div>
@@ -120,6 +121,7 @@
                     <th>ジャンル情報</th>
                     <th style="width:80px;">出版年</th>
                     <th style="width:80px;">スコア</th>
+                    <th style="width:80px; text-align:center;">Amazon<br>クリック</th>
                     <th style="width:140px;">操作</th>
                 </tr>
             </thead>
@@ -333,6 +335,13 @@
                     ${b.publishedYear || "-"}
                 </td>
                 <td style="font-weight:bold; color:#e67e22;">★ ${b.score || 0}</td>
+                
+                <td style="text-align:center;">                    
+                    <div style="font-size:18px; font-weight:bold; color:#c0392b;">                        
+                        ${b.click_count || 0}                    
+                        </div>                    
+                        <div style="font-size:10px; color:#999;">clicks</div>                
+                    </td>
                 <td>
                     <div class="actions">
                         <button class="btn btn-sm btn-search" onclick="openEdit('${b.id}')">編集</button>
@@ -343,6 +352,33 @@
             listEl.appendChild(tr);
         });
     }
+
+        // --- 追加：クリック数順で取得 ---
+        window.runSortByClicks = async () => {
+        const listEl = document.getElementById("book-list");
+        listEl.innerHTML = ""; // クリア
+        document.getElementById("status-bar").textContent = "クリック数順に取得中...";
+
+        try {
+            // click_count の降順（多い順）で50件取得
+            const q = query(collection(db, "books"), orderBy("click_count", "desc"), limit(50));
+            const snapshot = await getDocs(q);
+            
+            const books = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            currentBooks = books;
+            renderRows(books);
+
+            document.getElementById("status-bar").textContent = `クリック数上位 ${books.length}件を表示中`;
+        } catch(e) {
+            console.error(e);
+            // 初回のみインデックス作成のエラーが出ることがあるためアラートで案内
+            if(e.message.includes("indexes")) {
+                alert("【重要】Firebaseコンソールでインデックスを作成する必要があります。\nF12キーでコンソールを開き、表示されているURLをクリックしてください。");
+            } else {
+                alert("読み込みエラー: " + e.message);
+            }
+        }
+    };
 
     // --- 編集機能 ---
     window.openEdit = (id) => {
