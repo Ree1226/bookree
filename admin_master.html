@@ -188,7 +188,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { 
-        getFirestore, collection, doc, getDoc, getDocs, updateDoc, deleteDoc, 
+        getFirestore, collection, doc, getDoc, getDocs, updateDoc, deleteDoc, setDoc, serverTimestamp,
         query, where, orderBy, limit, startAfter 
     } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -345,6 +345,7 @@
                 <td>
                     <div class="actions">
                         <button class="btn btn-sm btn-search" onclick="openEdit('${b.id}')">編集</button>
+                        <button class="btn btn-sm" style="background:#f1c40f; color:#333;" onclick="setFeatured('${b.id}')">★おすすめ</button>
                         <button class="btn btn-sm btn-fix" onclick="runSingleSmartFix('${b.id}')">修復</button>
                     </div>
                 </td>
@@ -619,7 +620,33 @@
             console.error("統計読み込みエラー", e);
         }
     };
-</script>
+        // ... (既存のコードの最後) ...
 
+    // --- おすすめ本設定機能 ---
+    window.setFeatured = async (id) => {
+        // 現在表示中のリストから本を探す
+        const book = currentBooks.find(b => b.id === id);
+        if (!book) return;
+
+        const isConfirmed = confirm(`「${book.title}」をトップページのおすすめ本に設定しますか？\n（現在のおすすめ本は入れ替わります）`);
+        
+        if (isConfirmed) {
+            try {
+                // config/featured_book に上書き保存
+                await setDoc(doc(db, "config", "featured_book"), {
+                    book_id: book.id,
+                    title: book.title,
+                    updated_at: serverTimestamp()
+                });
+
+                alert(`設定完了！\n「${book.title}」をおすすめに設定しました。`);
+                
+            } catch (error) {
+                console.error("Error setting featured book: ", error);
+                alert("エラーが発生しました。コンソールを確認してください。");
+            }
+        }
+    };
+</script>
 </body>
 </html>

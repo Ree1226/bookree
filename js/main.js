@@ -12,7 +12,8 @@ import {
   orderBy, 
   limit,
   serverTimestamp,
-  getDocs
+  getDocs,
+  getDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 /* ===== Firebase 設定 ===== */
@@ -132,6 +133,9 @@ window.addEventListener('DOMContentLoaded', () => {
     isWebSearching['2026'] = false;
     currentRankingTypes['2026'] = 'score';
     setup2026Section(); // ※この関数をファイルの最後に追加します
+
+    // ▼▼▼ おすすめ本の読み込み（追加） ▼▼▼    
+    loadFeaturedBook();
 });
 
 function isAwardWinner(data) {
@@ -1199,5 +1203,56 @@ function setup2026Section() {
                 if (keyword) await searchExternalBooks(sectionId, keyword);
             });
         }
+    }
+}
+
+// ---------------
+// おすすめ本を読み込む関数
+// ---------------
+async function loadFeaturedBook() {
+    const section = document.getElementById("featured-section");
+    if (!section) return;
+    
+    try {
+        // 1. 設定ファイル(config/featured_book)からIDを取得
+        const configSnap = await getDoc(doc(db, "config", "featured_book"));
+        
+        if (!configSnap.exists()) return; 
+        
+        const configData = configSnap.data();
+        const bookId = configData.book_id;
+        
+        if (!bookId) return;
+
+        // 2. 本の情報を取得
+        const bookSnap = await getDoc(doc(db, "books", bookId));
+        
+        if (bookSnap.exists()) {
+            const book = bookSnap.data();
+            
+            // 3. HTMLを表示
+            section.innerHTML = `
+                <div class="featured-label">★ 今月のおすすめ</div>
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <img src="${book.image || 'https://via.placeholder.com/100x140?text=No+Image'}" 
+                         style="width: 80px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); object-fit: cover;">
+                    <div>
+                        <h3 style="margin: 0 0 5px 0; font-size: 18px; color: #2c3e50;">${book.title}</h3>
+                        <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;">
+                            ${book.authors ? book.authors.join(", ") : "著者不明"}
+                        </p>
+                        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(book.title)}" target="_blank" 
+                           onclick="trackClick('${bookId}')"
+                           style="background: #27ae60; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; display: inline-block;">
+                           Amazonで見る ↗
+                        </a>
+                    </div>
+                </div>
+            `;
+            section.style.display = "block"; // 描画後に表示
+        }
+        
+    } catch (e) {
+        console.error("おすすめ本の読み込みに失敗:", e);
     }
 }

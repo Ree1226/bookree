@@ -510,6 +510,27 @@ h2 {
 .close-btn { position: absolute; top: 15px; right: 20px; font-size: 32px; color: #aaa; cursor: pointer; line-height: 1; }
 .close-btn:hover { color: #333; }
 
+/* おすすめ本エリアのデザイン */
+#featured-section {
+    background: #fff9c4; /* 薄い黄色 */
+    border: 2px solid #f1c40f;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 30px;
+    display: none; /* データ読み込みまでは隠しておく */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.featured-label {
+    background: #f1c40f;
+    color: #333;
+    font-weight: bold;
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
 /* レスポンシブ */
 @media (max-width: 768px) {
     header { padding: 40px 15px; }
