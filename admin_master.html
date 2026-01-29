@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>BookRee Admin Master</title>
+    <!-- Chart.js を追加 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --danger: #e74c3c; --success: #27ae60; }
         body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f4f7f6; margin: 0; color: #333; }
@@ -78,29 +81,42 @@
         <a href="index.html" target="_blank" style="text-decoration:none; color:var(--accent);">サイトを表示 ↗</a>
     </header>
 
-    <!-- ▼▼▼ 追加：統計ダッシュボード ▼▼▼ -->
-    <div class="dashboard-stats">
-        <!-- ① サイト閲覧数 -->
-        <div style="flex: 1; min-width: 150px; border-right: 1px solid #eee;">
-            <h3 style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 14px;">閲覧数 (PV)</h3>
-            <div id="stat-pv" style="font-size: 32px; font-weight: bold; color: #e67e22;">Loading...</div>
-            <div style="font-size:10px; color:#999;">ユニークセッション数</div>
-        </div>
-
-        <!-- ② ジャンル別利用頻度 -->
-        <div style="flex: 3; min-width: 300px;">
-            <h3 style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 14px;">ジャンル別 利用頻度（投票アクション数）</h3>
-            <div id="stat-genres" style="display: flex; flex-direction: column; gap: 6px;">
-                Loading stats...
+    <!-- ▼▼▼ 統計ダッシュボード（改） ▼▼▼ -->
+    <div class="dashboard-stats" style="align-items: stretch;">
+        
+        <!-- ① 数字データエリア -->
+        <div style="flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 10px;">
+            <!-- 累計 -->
+            <div style="flex:1; border:1px solid #eee; border-radius:6px; padding:15px; display:flex; flex-direction:column; justify-content:center;">
+                <h3 style="margin: 0 0 5px 0; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">Total PV (累計)</h3>
+                <div id="stat-pv" style="font-size: 28px; font-weight: bold; color: #2c3e50;">Loading...</div>
+            </div>
+            <!-- 昨日 -->
+            <div style="flex:1; border:1px solid #eee; border-radius:6px; padding:15px; display:flex; flex-direction:column; justify-content:center;">
+                <h3 style="margin: 0 0 5px 0; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">Yesterday (昨日)</h3>
+                <div style="display:flex; align-items:baseline; gap:10px;">
+                    <div id="stat-yesterday" style="font-size: 28px; font-weight: bold; color: #e67e22;">-</div>
+                    <div id="stat-diff" style="font-size: 12px; font-weight:bold; color: #999;"></div>
+                </div>
             </div>
         </div>
 
-        <!-- ③ Firebaseリンク -->
-        <div style="flex: 1; min-width: 150px; border-left: 1px solid #eee; padding-left: 20px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-            <a href="https://console.firebase.google.com/u/0/project/book-ree/firestore/usage" target="_blank" style="background:#f1c40f; color:#333; font-size: 12px; text-decoration: none; padding:8px 15px; border-radius:20px; font-weight:bold;">
-                📊 Firebaseで確認
-            </a>
+        <!-- ② 週間グラフエリア (New!) -->
+        <div style="flex: 2; min-width: 300px; border:1px solid #eee; border-radius:6px; padding:15px; position:relative;">
+            <h3 style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">Weekly Trend (過去7日間)</h3>
+            <div style="height: 160px; width: 100%;">
+                <canvas id="pvChart"></canvas>
+            </div>
         </div>
+
+        <!-- ③ ジャンル別 (既存維持) -->
+        <div style="flex: 1.5; min-width: 250px; border:1px solid #eee; border-radius:6px; padding:15px;">
+            <h3 style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">Genre Stats</h3>
+            <div id="stat-genres" style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="color:#ccc; font-size:12px;">Loading...</span>
+            </div>
+        </div>
+
     </div>
     <!-- ▲▲▲ ここまで ▲▲▲ -->
 
@@ -555,72 +571,121 @@
         return null;
     }
 
-    // --- 統計データ読み込み機能 ---
+    // --- 統計データ読み込み機能（新・日別対応版） ---
     window.loadStats = async () => {
         try {
-            const docRef = doc(db, "stats", "global");
-            const snapshot = await getDoc(docRef);
+            // 1. 累計PVの取得 (stats/global)
+            const totalRef = doc(db, "stats", "global");
+            const totalSnap = await getDoc(totalRef);
+            // フィールド名も count ではなく page_views に戻ります
+            const totalPV = totalSnap.exists() ? (totalSnap.data().page_views || 0) : 0;
+            document.getElementById("stat-pv").textContent = totalPV.toLocaleString();
 
-            if (snapshot.exists()) {
-                const data = snapshot.data();
+            // 2. 日別データの取得 (daily_stats を日付降順で最新7件)
+            const dailyRef = collection(db, "daily_stats");
+            const q = query(dailyRef, orderBy("date", "desc"), limit(14)); // 比較用に少し多めに取得
+            const dailySnaps = await getDocs(q);
+            
+            const dailyData = dailySnaps.docs.map(d => d.data()); // [{date: "2026-01-29", pv: 10}, ...]
 
-                // 1. PVの表示
-                document.getElementById("stat-pv").textContent = (data.page_views || 0).toLocaleString();
+            // 昨日の日付文字列を作成 (YYYY-MM-DD)
+            const d = new Date();
+            d.setDate(d.getDate() - 1); // 1日前
+            const yYear = d.getFullYear();
+            const yMonth = ('0' + (d.getMonth() + 1)).slice(-2);
+            const yDay = ('0' + d.getDate()).slice(-2);
+            const yesterdayStr = `${yYear}-${yMonth}-${yDay}`;
 
-                // 2. ジャンル別投票データの整形
+            // 昨日のPVを探して表示
+            const yesterdayData = dailyData.find(item => item.date === yesterdayStr);
+            const yesterdayPV = yesterdayData ? yesterdayData.pv : 0;
+            document.getElementById("stat-yesterday").textContent = yesterdayPV.toLocaleString();
+
+            // おとといと比較して増減を表示
+            d.setDate(d.getDate() - 1); // さらに1日前
+            const dayBeforeStr = `${d.getFullYear()}-${('0' + (d.getMonth() + 1)).slice(-2)}-${('0' + d.getDate()).slice(-2)}`;
+            const dayBeforeData = dailyData.find(item => item.date === dayBeforeStr);
+            const dayBeforePV = dayBeforeData ? dayBeforeData.pv : 0;
+
+            const diffEl = document.getElementById("stat-diff");
+            if (yesterdayPV > dayBeforePV) {
+                diffEl.innerHTML = `<span style="color:#e74c3c;">▲ ${yesterdayPV - dayBeforePV}</span>`;
+            } else if (yesterdayPV < dayBeforePV) {
+                diffEl.innerHTML = `<span style="color:#3498db;">▼ ${dayBeforePV - yesterdayPV}</span>`;
+            } else {
+                diffEl.textContent = "±0";
+            }
+
+            // --- グラフ描画 (Chart.js) ---
+            // グラフ用にデータを過去7日分だけ切り出して、古い順（左→右）に並べ替え
+            const chartData = dailyData.slice(0, 7).reverse(); 
+            
+            const ctx = document.getElementById('pvChart');
+            if (ctx && window.Chart) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.map(d => d.date.slice(5)), // "01-29" のように月日だけ表示
+                        datasets: [{
+                            label: 'Access',
+                            data: chartData.map(d => d.pv),
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3, // 曲線のなめらかさ
+                            fill: true,
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { display:false } },
+                            x: { grid: { display:false } }
+                        }
+                    }
+                });
+            }
+
+            // 3. ジャンル別投票データの取得 (後方互換用: stats/global)
+            // ※注意: 新しいシステムでは「投票」時の累計集計を行っていない場合、ここの更新は止まります。
+            // 必要に応じてジャンル集計ロジックも main.js に追加する必要があります。
+            const globalRef = doc(db, "stats", "global");
+            const globalSnap = await getDoc(globalRef);
+
+            if (globalSnap.exists()) {
+                const gData = globalSnap.data();
                 const genres = [];
-                const labelMap = {
-                    study: "学習参考書",
-                    literature: "文芸",
-                    business: "ビジネス",
-                    specialized: "専門書",
-                    hobby: "趣味・実用",
-                    children: "児童書",
-                    other: "その他"
-                };
-
-                for (const key in data) {
+                const labelMap = { study: "学習参考書", literature: "文芸", business: "ビジネス", specialized: "専門書", hobby: "趣味", children: "児童書", other: "その他" };
+                
+                for (const key in gData) {
                     if (key.startsWith("vote_")) {
-                        const rawGenre = key.replace("vote_", "");
-                        genres.push({ 
-                            key: rawGenre,
-                            name: labelMap[rawGenre] || rawGenre, 
-                            count: data[key] 
-                        });
+                        genres.push({ name: labelMap[key.replace("vote_", "")] || key, count: gData[key] });
                     }
                 }
-
                 genres.sort((a, b) => b.count - a.count);
-
-                if (genres.length > 0) {
-                    const maxVal = genres[0].count;
-                    const html = genres.map((g, index) => {
-                        const percent = (g.count / maxVal) * 100;
-                        const color = index < 3 ? '#3498db' : '#bdc3c7'; 
-                        return `
-                            <div style="display:flex; align-items:center; font-size:13px;">
-                                <div style="width:90px; font-weight:bold; text-align:right; padding-right:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${g.name}</div>
-                                <div style="flex:1; background:#f0f0f0; border-radius:4px; height:18px; position:relative;">
-                                    <div style="background:${color}; width:${percent}%; height:100%; border-radius:4px;"></div>
-                                    <span style="position:absolute; right:5px; top:1px; font-size:11px; color:#555;">${g.count}</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join("");
-                    document.getElementById("stat-genres").innerHTML = html;
-                } else {
-                    document.getElementById("stat-genres").innerHTML = "<div style='color:#999; font-size:12px;'>まだ投票データがありません</div>";
-                }
-
-            } else {
-                document.getElementById("stat-pv").textContent = "0";
-                document.getElementById("stat-genres").innerHTML = "<div style='color:#999;'>データなし</div>";
+                
+                // HTML生成
+                const html = genres.map((g, i) => {
+                    const pct = genres[0].count ? (g.count / genres[0].count * 100) : 0;
+                    return `<div style="display:flex; align-items:center; font-size:12px;">
+                        <div style="width:70px; text-align:right; margin-right:8px; white-space:nowrap; overflow:hidden;">${g.name}</div>
+                        <div style="flex:1; background:#f0f0f0; height:8px; border-radius:4px; overflow:hidden;">
+                            <div style="background:${i<3?'#3498db':'#bdc3c7'}; width:${pct}%; height:100%;"></div>
+                        </div>
+                        <div style="width:30px; text-align:right; color:#666;">${g.count}</div>
+                    </div>`;
+                }).join("");
+                document.getElementById("stat-genres").innerHTML = html || "<div style='color:#ccc;'>No Data</div>";
             }
+
         } catch (e) {
             console.error("統計読み込みエラー", e);
+            document.getElementById("stat-pv").textContent = "Err";
         }
     };
-        // ... (既存のコードの最後) ...
 
     // --- おすすめ本設定機能 ---
     window.setFeatured = async (id) => {

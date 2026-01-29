@@ -136,6 +136,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ▼▼▼ おすすめ本の読み込み（追加） ▼▼▼    
     loadFeaturedBook();
+
+    // ▼▼▼ アクセス集計（PV）を実行 ▼▼▼    
+    trackPageLoad(); 
 });
 
 function isAwardWinner(data) {
@@ -1254,5 +1257,45 @@ async function loadFeaturedBook() {
         
     } catch (e) {
         console.error("おすすめ本の読み込みに失敗:", e);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   ▼▼▼ アクセス解析（PV計測）機能 ▼▼▼
+   -------------------------------------------------------------------------- */
+
+// 今日の日付を "YYYY-MM-DD" 形式の文字列で返す関数
+function getTodayStr() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    return `${year}-${month}-${day}`;
+}
+
+// ページ読み込み時にPVをカウントする関数
+async function trackPageLoad() {
+    try {
+        // 1. 全体の累計PV (stats/global - 既存の場所に統合)
+        // page_views フィールドを+1します
+        const globalStatsRef = doc(db, "stats", "global");
+        await setDoc(globalStatsRef, {
+            page_views: increment(1)
+        }, { merge: true });
+        
+        // 2. 日別のPV (daily_stats/YYYY-MM-DD)
+        // こちらはグラフ用に引き続き記録します
+        const todayStr = getTodayStr(); 
+        const dailyRef = doc(db, "daily_stats", todayStr);
+
+        await setDoc(dailyRef, {
+            pv: increment(1),
+            date: todayStr 
+        }, { merge: true });
+        
+        console.log(`PV counted for: ${todayStr}`);
+
+    } catch (e) {
+        console.error("Error tracking page view: ", e);
     }
 }
