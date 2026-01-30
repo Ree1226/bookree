@@ -29,6 +29,9 @@
         
         button.btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
         .btn-search { background: var(--accent); }
+        .btn-success { background-color: #27ae60; color: white;}
+        .btn-success:hover { background-color: #219150;}
+
         .btn-fix { background: var(--success); }
         .btn-danger { background: var(--danger); }
         .btn:hover { opacity: 0.9; }
@@ -45,7 +48,8 @@
         .bg-study { background: #9b59b6; }
         .bg-lit { background: #e67e22; }
         .bg-target { background: #34495e; }
-        
+        .bg-sub { background: #16a085; } /* 新しく追加：小ジャンル用の緑色 */
+
         .actions { display: flex; gap: 5px; }
         .btn-sm { padding: 5px 10px; font-size: 12px; }
 
@@ -181,6 +185,10 @@
         <div class="form-group">
             <label>ターゲット (カンマ区切り, 例: high_school,general)</label>
             <input type="text" id="edit-target">
+        </div>
+        <div class="form-group">            
+            <label style="color:#16a085;">サブジャンル (カンマ区切り, 例: mystery,history)</label>            
+            <input type="text" id="edit-subGenres" placeholder="fantasy, romance など">        
         </div>
         <div class="form-group">    
             <label>出版年 (例: 2026, 2026-01-01)</label>    
@@ -335,6 +343,12 @@
                 targetBadges = b.target.map(t => `<span class="badge bg-target">${t}</span>`).join("");
             }
             
+            let subBadges = "";        
+            if(b.subGenres && Array.isArray(b.subGenres)) {            
+                // subGenres配列の中身をループして、緑色のバッジを作成            
+                subBadges = b.subGenres.map(s => `<span class="badge bg-sub">${s}</span>`).join("");        
+            }
+
             tr.innerHTML = `
                 <td><img src="${img}" class="thumb"></td>
                 <td>
@@ -407,6 +421,7 @@
         document.getElementById("edit-authors").value = book.authors ? book.authors.join(",") : "";
         document.getElementById("edit-genre").value = book.mainGenre || "other";
         document.getElementById("edit-target").value = book.target ? book.target.join(",") : "";
+        document.getElementById("edit-subGenres").value = (book.subGenres && Array.isArray(book.subGenres)) ? book.subGenres.join(",") : "";
         document.getElementById("edit-publishedYear").value = book.publishedYear || "";
         document.getElementById("edit-score").value = book.score || 0;
         document.getElementById("edit-image").value = book.image || "";
@@ -421,22 +436,93 @@
     window.saveBook = async () => {
         const id = document.getElementById("edit-id").value;
         const targetStr = document.getElementById("edit-target").value;
+        const subGenresStr = document.getElementById("edit-subGenres").value; // サブジャンル取得
         
+        // データの構築
         const newData = {
             title: document.getElementById("edit-title").value,
             authors: document.getElementById("edit-authors").value.split(",").map(s=>s.trim()),
             mainGenre: document.getElementById("edit-genre").value,
             target: targetStr ? targetStr.split(",").map(s=>s.trim()) : [],
-            publishedYear: parseInt(document.getElementById("edit-publishedYear").value, 10) || null,            score: parseInt(document.getElementById("edit-score").value, 10),
+            // サブジャンルを配列化（空文字は除外）
+            subGenres: subGenresStr ? subGenresStr.split(",").map(s=>s.trim()).filter(Boolean) : [],
+            publishedYear: parseInt(document.getElementById("edit-publishedYear").value, 10) || null,
+            score: parseInt(document.getElementById("edit-score").value, 10),
             image: document.getElementById("edit-image").value
         };
 
         if(confirm("変更を保存しますか？")) {
-            await updateDoc(doc(db, "books", id), newData);
-            alert("保存しました");
-            closeModal();
-            const row = document.getElementById(`row-${id}`);
-            if(row) row.style.opacity = "0.5"; 
+            try {
+                // 1. Firebaseを更新
+                await updateDoc(doc(db, "books", id), newData);
+                
+                // 2. 画面上のデータ(currentBooks)も更新
+                const bookIndex = currentBooks.findIndex(b => b.id === id);
+                if(bookIndex > -1) {
+                    // 既存データに新しいデータを上書き統合
+                    currentBooks[bookIndex] = { ...currentBooks[bookIndex], ...newData };
+                    const b = currentBooks[bookIndex];
+
+                    // 3. テーブルの行(HTML)を直接書き換えて、見た目を即時反映させる
+                    const tr = document.getElementById(`row-${id}`);
+                    if(tr) {
+                        // ▼ここから行のHTML生成（renderRowsと同じロジック）
+                        let img = b.image || "https://via.placeholder.com/40x50?text=No";
+                        
+                        let targetBadges = "";
+                        if(b.target && Array.isArray(b.target)) {
+                            targetBadges = b.target.map(t => `<span class="badge bg-target">${t}</span>`).join("");
+                        }
+
+                        // ★サブジャンルバッジ生成
+                        let subBadges = "";
+                        if(b.subGenres && Array.isArray(b.subGenres)) {
+                            subBadges = b.subGenres.map(s => `<span class="badge bg-sub">${s}</span>`).join("");
+                        }
+
+                        // 行の中身を差し替え
+                        tr.innerHTML = `
+                            <td><img src="${img}" class="thumb"></td>
+                            <td>
+                                <div style="font-weight:bold; font-size:15px;">${b.title}</div>
+                                <div style="font-size:12px; color:#666;">${b.authors ? b.authors.join(", ") : ""}</div>
+                                <div style="font-size:10px; color:#999;">ID: ${b.id}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-study">${b.mainGenre || "未設定"}</span>
+                                ${targetBadges}
+                                ${subBadges} <!-- ★ここに即座に反映されます -->
+                            </td>
+                            <td style="font-size:13px; color:#555;">${b.publishedYear || "-"}</td>
+                            <td style="font-weight:bold; color:#e67e22;">★ ${b.score || 0}</td>
+                            <td style="text-align:center;">                    
+                                <div style="font-size:18px; font-weight:bold; color:#c0392b;">${b.click_count || 0}</div>                    
+                                <div style="font-size:10px; color:#999;">clicks</div>                
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="btn btn-sm btn-search" onclick="openEdit('${b.id}')">編集</button>
+                                    <button class="btn btn-sm" style="background:#f1c40f; color:#333;" onclick="setFeatured('${b.id}')">★おすすめ</button>
+                                    <button class="btn btn-sm btn-fix" onclick="runSingleSmartFix('${b.id}')">修復</button>
+                                </div>
+                            </td>
+                        `;
+                        // ▲ここまで
+
+                        // 更新がわかりやすいように一瞬だけ背景色を変える
+                        tr.style.transition = "background 0.5s";
+                        tr.style.backgroundColor = "#d5f5e3"; 
+                        setTimeout(() => tr.style.backgroundColor = "transparent", 1000);
+                    }
+                }
+
+                alert("保存しました");
+                closeModal();
+
+            } catch(e) {
+                console.error(e);
+                alert("エラーが発生しました: " + e.message);
+            }
         }
     };
 
@@ -617,24 +703,53 @@
             }
 
             // --- グラフ描画 (Chart.js) ---
-            // グラフ用にデータを過去7日分だけ切り出して、古い順（左→右）に並べ替え
-            const chartData = dailyData.slice(0, 7).reverse(); 
+            // 修正版：過去7日分の日付を自動生成し、データがない日は「0」で埋める処理
+            
+            const chartLabels = [];
+            const chartValues = [];
+            
+            // 今日を基準に過去7日分ループする (6日前 ～ 0日前)
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                
+                // DBのキー形式 (YYYY-MM-DD) を作成
+                // ※日本時間(JST)を考慮する場合、簡易的に以下のようにします
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+                
+                // グラフのラベル用 (MM-DD)
+                chartLabels.push(`${month}-${day}`);
+                
+                // その日のデータが dailyData にあるか探す
+                const found = dailyData.find(item => item.date === dateKey);
+                chartValues.push(found ? found.pv : 0); // なければ 0
+            }
             
             const ctx = document.getElementById('pvChart');
+            
+            // 既存のグラフがあれば破棄して再描画（表示崩れ防止）
+            if (window.myChartInstance) {
+                window.myChartInstance.destroy();
+            }
+
             if (ctx && window.Chart) {
-                new Chart(ctx, {
+                // グラフインスタンスを変数に保存しておく
+                window.myChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: chartData.map(d => d.date.slice(5)), // "01-29" のように月日だけ表示
+                        labels: chartLabels, // 生成した日付リスト
                         datasets: [{
                             label: 'Access',
-                            data: chartData.map(d => d.pv),
+                            data: chartValues, // 生成した数値リスト
                             borderColor: '#3498db',
                             backgroundColor: 'rgba(52, 152, 219, 0.1)',
                             borderWidth: 2,
-                            tension: 0.3, // 曲線のなめらかさ
+                            tension: 0.3,
                             fill: true,
-                            pointRadius: 3
+                            pointRadius: 4
                         }]
                     },
                     options: {
@@ -642,13 +757,13 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
-                            y: { beginAtZero: true, grid: { display:false } },
+                            y: { beginAtZero: true, suggestedMax: 5 }, // 数値が小さくても見やすく
                             x: { grid: { display:false } }
                         }
                     }
                 });
             }
-
+            
             // 3. ジャンル別投票データの取得 (後方互換用: stats/global)
             // ※注意: 新しいシステムでは「投票」時の累計集計を行っていない場合、ここの更新は止まります。
             // 必要に応じてジャンル集計ロジックも main.js に追加する必要があります。
