@@ -530,74 +530,87 @@ function updateChart(genreId, books) {
     });
   }
       
-function createBookCard(book, rank = null, displayType = 'score') {
-  const div = document.createElement("div");
-  div.className = "book-card";
-
-  let authorText = "著者不明";
-  if (book.authors && Array.isArray(book.authors) && book.authors.length > 0) {
-      authorText = book.authors.join(", ");
-  } else if (book.author) {
-      authorText = book.author;
-  }
-
-  let coverHtml = '';
-  const imgData = book.imageLinks || {}; 
-  let imgUrl = imgData.thumbnail || imgData.smallThumbnail || book.image;
-  if (imgUrl) {
-      imgUrl = imgUrl.replace('http://', 'https://');
-      coverHtml = `<img src="${imgUrl}" class="book-cover" alt="${book.title}">`;
-  } else {
-      coverHtml = `<div class="book-cover-placeholder">No Image</div>`;
-  }
-
-  const searchQuery = `${book.title} ${authorText}`;
-  const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery)}`;
-  const isVoted = localStorage.getItem(`voted_${book.id}`);
-
-  let rankHtml = '';
-  if (rank) {
-      const rankClass = rank <= 3 ? `rank-${rank}` : '';
-      rankHtml = `<div class="rank-badge ${rankClass}">${rank}</div>`;
-  }
-
-  const scoreValue = book[displayType] !== undefined ? book[displayType] : 0;
-  const scoreColor = displayType === 'score' ? '#e67e22' : '#27ae60';
-  const labelPrefix = '★';
+  function createBookCard(book, rank = null, displayType = 'score') {
+    const div = document.createElement("div");
+    div.className = "book-card";
   
-  div.innerHTML = `
-      ${rankHtml}
-      <div class="book-item">
-          ${coverHtml}
-          <div class="book-info">
-              <div class="book-title" title="${book.title}">${book.title}</div>
-              <div class="book-author-text" style="font-size:0.85em; color:#666; margin-bottom:5px;">${authorText}</div>
-              <div><span class="current-score" style="color:${scoreColor};">${labelPrefix} ${scoreValue}</span></div>
-          </div>
-      </div>
+    let authorText = "著者不明";
+    if (book.authors && Array.isArray(book.authors) && book.authors.length > 0) {
+        authorText = book.authors.join(", ");
+    } else if (book.author) {
+        authorText = book.author;
+    }
+  
+    let coverHtml = '';
+    const imgData = book.imageLinks || {}; 
+    let imgUrl = imgData.thumbnail || imgData.smallThumbnail || book.image;
+    if (imgUrl) {
+        imgUrl = imgUrl.replace('http://', 'https://');
+        coverHtml = `<img src="${imgUrl}" class="book-cover" alt="${book.title}">`;
+    } else {
+        coverHtml = `<div class="book-cover-placeholder">No Image</div>`;
+    }
+  
+    const searchQuery = `${book.title} ${authorText}`;
+    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery)}`;
+    const isVoted = localStorage.getItem(`voted_${book.id}`);
+  
+    let rankHtml = '';
+    if (rank) {
+        const rankClass = rank <= 3 ? `rank-${rank}` : '';
+        rankHtml = `<div class="rank-badge ${rankClass}">${rank}</div>`;
+    }
+  
+    const scoreValue = book[displayType] !== undefined ? book[displayType] : 0;
+    const scoreColor = displayType === 'score' ? '#e67e22' : '#27ae60';
+    const labelPrefix = '★';
+    
+    const shareText = `『${book.title}』を応援しています！\nみんなのおすすめ本ランキング #BookRee`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
+    
+    div.innerHTML = `
+        ${rankHtml}
+        <div class="book-item">
+            ${coverHtml}
+            <div class="book-info">
+                <div class="book-title" title="${book.title}">${book.title}</div>
+                <div class="book-author-text" style="font-size:0.85em; color:#666; margin-bottom:5px;">${authorText}</div>
+                <div><span class="current-score" style="color:${scoreColor};">${labelPrefix} ${scoreValue}</span></div>
+            </div>
+        </div>
+        
+        <a href="${amazonUrl}" target="_blank" class="amazon-link-btn" onclick="trackClick('${book.id}')">Amazonで見る</a>
+  
+        <div class="rating-area">
+            ${isVoted ? 
+               // ▼▼▼ 修正: white-space:nowrap で改行を禁止し、gapを狭めてスマホに収める ▼▼▼
+               `<div style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0; flex-wrap:nowrap;">
+                    <span style="color:#27ae60; background:#eafaf1; border:1px solid #27ae60; font-weight:bold; padding:4px 8px; border-radius:20px; font-size:11px; display:flex; align-items:center; gap:2px; white-space:nowrap; flex-shrink: 0;">
+                      ✔ 投票済
+                    </span>
+                    <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" 
+                       style="background-color:#000; color:#fff; text-decoration:none; padding:4px 8px; border-radius:15px; font-size:11px; display:flex; align-items:center; gap:4px; transition: opacity 0.3s; border:1px solid #000; white-space:nowrap; flex-shrink: 0;">
+                       <span style="font-style:normal; font-weight:bold;">𝕏</span> でシェア
+                    </a>
+                </div>`
+               : 
+               `<div class="rating-buttons">
+                    <button class="btn-vote" data-val="1">+1</button>
+                    <button class="btn-vote" data-val="3">+3</button>
+                    <button class="btn-vote" data-val="5">+5</button>
+                </div>`
+            }
+        </div>
+    `;
+    
+    if (!isVoted) {
+        div.querySelectorAll(".btn-vote").forEach(btn => {
+            btn.addEventListener("click", () => handleVote(book, parseInt(btn.dataset.val), div, displayType));
+        });
+    }
+    return div;
+  }
       
-      <a href="${amazonUrl}" target="_blank" class="amazon-link-btn" onclick="trackClick('${book.id}')">Amazonで見る</a>
-
-      <div class="rating-area">
-          ${isVoted ? 
-             `<div class="voted-message" style="color:#7f8c8d; font-weight:bold; padding:10px 0;">投票済み</div>` : 
-             `<div class="rating-buttons">
-                  <button class="btn-vote" data-val="1">+1</button>
-                  <button class="btn-vote" data-val="3">+3</button>
-                  <button class="btn-vote" data-val="5">+5</button>
-              </div>`
-          }
-      </div>
-  `;
-  
-  if (!isVoted) {
-      div.querySelectorAll(".btn-vote").forEach(btn => {
-          btn.addEventListener("click", () => handleVote(book, parseInt(btn.dataset.val), div, displayType));
-      });
-  }
-  return div;
-}
-
 async function searchExternalBooks(genreId, keyword) {
   isWebSearching[genreId] = true;
 
@@ -686,59 +699,71 @@ function createExternalBookCard(item) {
 }
 
 async function handleVote(book, points, cardElement, currentDisplayType = 'score') {
-  const storageKey = `voted_${book.id}`;
-  if (localStorage.getItem(storageKey)) {
-      console.log("すでに投票済みのためスキップしました");
-      return;
+    const storageKey = `voted_${book.id}`;
+    if (localStorage.getItem(storageKey)) {
+        console.log("すでに投票済みのためスキップしました");
+        return;
+    }
+  
+    try {
+        localStorage.setItem(storageKey, "true");
+  
+        // ▼▼▼ シェア用URLの作成 ▼▼▼
+        const shareText = `『${book.title}』に投票しました！ (+${points}点)\n現在のスコアをチェック 👇 #BookRee`;
+        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
+  
+        const ratingArea = cardElement.querySelector(".rating-area");
+        if (ratingArea) {
+            // ▼▼▼ 修正: テキストだけでなく、シェアボタンも横に並べて表示 ▼▼▼
+            ratingArea.innerHTML = `
+              <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 0;">
+                  <span style="color:#7f8c8d; font-weight:bold;">投票済み (+${points})</span>
+                  <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" 
+                     style="background-color:#000; color:#fff; text-decoration:none; padding:4px 10px; border-radius:15px; font-size:11px; display:flex; align-items:center; gap:4px; transition: opacity 0.3s;">
+                     <span style="font-style:normal; font-weight:bold;">𝕏</span> でシェア
+                  </a>
+              </div>`;
+        }
+        
+        const scoreSpan = cardElement.querySelector(".current-score");
+        if(scoreSpan) {
+            const currentText = scoreSpan.textContent.replace(/[^0-9]/g, '');
+            const currentVal = parseInt(currentText, 10) || 0;
+            
+            let displayIncrement = points;
+            if (currentDisplayType === 'score') {
+                const raw = book.raw_score || 0;
+                const total = book.score || 0;
+                if (total > raw * 1.5) { 
+                     displayIncrement = points * 2; 
+                }
+            }
+            
+            const labelPrefix = '★';
+            scoreSpan.textContent = `${labelPrefix} ${currentVal + displayIncrement}`;
+        }
+  
+        const isBonus = isAwardWinner(book);
+        const scoreIncrement = isBonus ? points * 2 : points;
+        const rawIncrement = points;
+  
+        const bookRef = doc(db, "books", book.id);
+        await updateDoc(bookRef, {
+            score: increment(scoreIncrement),
+            raw_score: increment(rawIncrement),
+        });
+  
+        if (book && book.mainGenre && window.logGenreVote) {
+            window.logGenreVote(book.mainGenre);
+        }
+  
+    } catch (error) {
+        console.error("投票エラー:", error);
+        alert("通信エラーが発生しました。もう一度お試しください。");
+        localStorage.removeItem(storageKey);
+    }
   }
-
-  try {
-      localStorage.setItem(storageKey, "true");
-
-      const ratingArea = cardElement.querySelector(".rating-area");
-      if (ratingArea) {
-          ratingArea.innerHTML = `<div class="voted-message" style="color:#7f8c8d; font-weight:bold; padding:10px 0;">投票済み (+${points})</div>`;
-      }
-      
-      const scoreSpan = cardElement.querySelector(".current-score");
-      if(scoreSpan) {
-          const currentText = scoreSpan.textContent.replace(/[^0-9]/g, '');
-          const currentVal = parseInt(currentText, 10) || 0;
-          
-          let displayIncrement = points;
-          if (currentDisplayType === 'score') {
-              const raw = book.raw_score || 0;
-              const total = book.score || 0;
-              if (total > raw * 1.5) { 
-                   displayIncrement = points * 2; 
-              }
-          }
-          
-          const labelPrefix = '★';
-          scoreSpan.textContent = `${labelPrefix} ${currentVal + displayIncrement}`;
-      }
-
-      const isBonus = isAwardWinner(book);
-      const scoreIncrement = isBonus ? points * 2 : points;
-      const rawIncrement = points;
-
-      const bookRef = doc(db, "books", book.id);
-      await updateDoc(bookRef, {
-          score: increment(scoreIncrement),
-          raw_score: increment(rawIncrement),
-      });
-
-      if (book && book.mainGenre && window.logGenreVote) {
-          window.logGenreVote(book.mainGenre);
-      }
-
-  } catch (error) {
-      console.error("投票エラー:", error);
-      alert("通信エラーが発生しました。もう一度お試しください。");
-      localStorage.removeItem(storageKey);
-  }
-}
-
+  
 // OpenBDのデータ + 本のタイトルを受け取り、最適な target / genre を返す
 function determineSmartGenre(openBdData, title) {
     let cCode = null;
@@ -839,10 +864,24 @@ async function voteForNewBook(book, points, cardElement) {
     const weightedPoints = isBonus ? points * 2 : points;
   
     localStorage.setItem(storageKey, "true");
+
+    // ▼▼▼ シェア用URLの作成 ▼▼▼
+    const shareText = `『${title}』を見つけて投票しました！ (+${points}点)\nみんなのおすすめ本ランキング #BookRee`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
+
     const ratingArea = cardElement.querySelector(".rating-area");
     if (ratingArea) {
-        const msg = isBonus ? `Thanks! (+${weightedPoints}) 🏆 Award Bonus!` : `Thanks! (+${rawPoints})`;
-        ratingArea.innerHTML = `<div class="voted-message" style="color:#e67e22; font-weight:bold; padding:10px 0;">${msg}</div>`;
+        const msg = isBonus ? `Thanks! (+${weightedPoints}) 🏆` : `Thanks! (+${rawPoints})`;
+        // ▼▼▼ 修正: こちらもシェアボタンを追加 ▼▼▼
+        ratingArea.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 0;">
+                <span style="color:#e67e22; font-weight:bold;">${msg}</span>
+                <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" 
+                   style="background-color:#000; color:#fff; text-decoration:none; padding:4px 10px; border-radius:15px; font-size:11px; display:flex; align-items:center; gap:4px;">
+                   <span style="font-style:normal; font-weight:bold;">𝕏</span> でシェア
+                </a>
+            </div>`;
+        
         const scoreSpan = cardElement.querySelector(".current-score");
         if(scoreSpan) scoreSpan.textContent = `★ ${weightedPoints}`; 
     }
@@ -951,7 +990,7 @@ async function voteForNewBook(book, points, cardElement) {
         if(ratingArea) ratingArea.innerHTML = `<span style="color:red; font-size:12px;">エラーが発生しました</span>`;
         alert("投票に失敗しました。通信環境を確認してください。");
     }
-  }
+}
   
 function initModal() {
   const modal = document.getElementById("ranking-modal"); 
