@@ -18,12 +18,12 @@ import {
 
 /* ===== Firebase 設定 ===== */
 const firebaseConfig = {
-  apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
-  authDomain: "book-ree.firebaseapp.com",
-  projectId: "book-ree",
-  storageBucket: "book-ree.firebasestorage.app",
-  messagingSenderId: "721168073032",
-  appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
+    apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
+    authDomain: "book-ree.firebaseapp.com",
+    projectId: "book-ree",
+    storageBucket: "book-ree.firebasestorage.app",
+    messagingSenderId: "721168073032",
+    appId: "1:721168073032:web:9d46233bd8b0d11b73f37d"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -103,6 +103,9 @@ const chartInstances = {};
 const isWebSearching = {};
 const currentRankingTypes = {};
 
+// ★追加：各ジャンルの現在の表示件数を管理 (初期値20)
+const currentLimits = {}; 
+
 const AWARD_KEYWORDS = [
   "本屋大賞", "直木賞", "芥川賞",
   "山本周五郎賞", "吉川英治文学賞", "吉川英治文学新人賞", "柴田錬三郎賞",
@@ -125,6 +128,7 @@ window.addEventListener('DOMContentLoaded', () => {
     GENRES.forEach(genre => {
         isWebSearching[genre.id] = false; 
         currentRankingTypes[genre.id] = 'score'; 
+        currentLimits[genre.id] = 20; // ★初期表示数を20に設定
         setupGenreSection(genre.id);
     });
     initModal();
@@ -132,9 +136,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // ▼▼▼ 2026年ランキングの初期化 ▼▼▼
     isWebSearching['2026'] = false;
     currentRankingTypes['2026'] = 'score';
-    setup2026Section(); // ※この関数をファイルの最後に追加します
+    currentLimits['2026'] = 20; // ★初期表示数を20に設定
+    setup2026Section(); 
 
-    // ▼▼▼ おすすめ本の読み込み（追加） ▼▼▼    
+    // ▼▼▼ おすすめ本の読み込み ▼▼▼    
     loadFeaturedBook();
 
     // ▼▼▼ アクセス集計（PV）を実行 ▼▼▼    
@@ -162,7 +167,7 @@ function isAwardWinner(data) {
 }
 
 /**
- * ジャンルごとの初期設定
+ * ジャンルごとの初期設定（ページネーション対応版）
  */
 function setupGenreSection(genreId) {
   const listElement = document.getElementById(`list-${genreId}`);
@@ -170,11 +175,15 @@ function setupGenreSection(genreId) {
 
   let unsubscribe = null;
 
+  // データを取得・描画する内部関数
   const fetchAndRender = () => {
       if (unsubscribe) unsubscribe();
 
       const container = document.getElementById(`list-${genreId}`);
-      if(container) container.innerHTML = '<p style="padding:20px; text-align:center;">読み込み中...</p>';
+      // 初回ロード時のみ「読み込み中」を表示（もっと見るの時は消さない）
+      if(container && container.childElementCount === 0) {
+          container.innerHTML = '<p style="padding:20px; text-align:center;">読み込み中...</p>';
+      }
 
       const sortField = currentRankingTypes[genreId] || 'score';
       
@@ -197,7 +206,10 @@ function setupGenreSection(genreId) {
       }
 
       constraints.push(orderBy(sortField, "desc"));
-      constraints.push(limit(50));
+      
+      // ★動的なリミット設定
+      const limitCount = currentLimits[genreId] || 20;
+      constraints.push(limit(limitCount));
 
       const q = query(collection(db, "books"), ...constraints);
 
@@ -214,7 +226,7 @@ function setupGenreSection(genreId) {
           console.error("Firebase Error:", error);
           const container = document.getElementById(`list-${genreId}`);
           if(error.code === 'failed-precondition') {
-             const msg = "【管理者用メッセージ】<br>この絞り込み条件での検索にはインデックスが必要です。<br>F12キーを押してコンソールを開き、表示されているURLをクリックしてインデックスを作成してください。";
+             const msg = "【管理者用メッセージ】<br>インデックスが必要です。コンソールを確認してください。";
              if(container) container.innerHTML = `<p style="padding:20px; color:red; text-align:center; font-weight:bold;">${msg}</p>`;
           } else {
              if(container) container.innerHTML = '<p style="padding:20px; text-align:center;">エラーが発生しました。</p>';
@@ -224,11 +236,15 @@ function setupGenreSection(genreId) {
 
   fetchAndRender();
 
+  // --- イベントリスナー設定 ---
+  
   const rankingTypeSelect = document.getElementById(`ranking-type-${genreId}`);
   if (rankingTypeSelect) {
       rankingTypeSelect.addEventListener("change", (e) => {
           currentRankingTypes[genreId] = e.target.value;
           isWebSearching[genreId] = false;
+          // ランキング基準を変えたら件数をリセットする
+          currentLimits[genreId] = 20;
           fetchAndRender(); 
       });
   }
@@ -288,18 +304,34 @@ function setupGenreSection(genreId) {
                   if (subSelect) subSelect.innerHTML = '<option value="all">すべて</option>';
               }
               
+              // 絞り込みを変えたら件数をリセットして再取得
+              currentLimits[genreId] = 20;
               fetchAndRender();
           });
       }
-      if (subSelect) subSelect.addEventListener("change", () => applyLocalFilter(genreId));
+      if (subSelect) {
+          subSelect.addEventListener("change", () => {
+              // ローカルフィルタのみで対応（再取得不要）
+              applyLocalFilter(genreId);
+          });
+      }
   } else {
       const filterSelect = document.getElementById(`filter-${genreId}`);
       if (filterSelect) {
           filterSelect.addEventListener("change", () => {
+              // 絞り込みを変えたら件数をリセットして再取得
+              currentLimits[genreId] = 20;
               fetchAndRender();
           });
       }
   }
+
+  // ★「もっと見る」ボタンの処理用関数を要素に紐付ける（クロージャ対応）
+  listElement.dataset.genreId = genreId;
+  listElement.loadMore = () => {
+      currentLimits[genreId] += 20; // 20件追加
+      fetchAndRender(); // 再取得
+  };
 }
 
 function applyLocalFilter(genreId) {
@@ -339,38 +371,85 @@ function filterByText(genreId, books) {
 }
 
 function renderBookshelf(genreId, books) {
-  const container = document.getElementById(`list-${genreId}`);
-  container.innerHTML = "";
+    const container = document.getElementById(`list-${genreId}`);
+    container.innerHTML = "";
+    
+    if (books.length === 0) {
+        container.innerHTML = `<p style="padding:20px; color:#666; width:100%; text-align:center;">
+            ランキング内に見つかりません。<br>
+            <span style="font-size:0.9em; color:#3498db;">Enterキー または 検索ボタンで、Web上の本を検索・投票できます</span>
+        </p>`;
+        return;
+    }
   
-  if (books.length === 0) {
-      container.innerHTML = `<p style="padding:20px; color:#666; width:100%; text-align:center;">
-          ランキング内に見つかりません。<br>
-          <span style="font-size:0.9em; color:#3498db;">Enterキー または 検索ボタンで、Web上の本を検索・投票できます</span>
-      </p>`;
-      return;
+    const currentType = currentRankingTypes[genreId] || 'score';
+  
+    books.forEach((book, index) => {
+        container.appendChild(createBookCard(book, index + 1, currentType)); 
+    });
+  
+    // ★「もっと見る」ボタンの表示判定とデザイン修正
+    const limitCount = currentLimits[genreId] || 20;
+    if (books.length >= limitCount) {
+        const loadMoreBtn = document.createElement("button");
+        loadMoreBtn.textContent = "もっと見る (+20件)";
+        
+        // ▼▼▼ デザインをサイトのテーマ（青系）に合わせて修正 ▼▼▼
+        loadMoreBtn.style.cssText = `
+            display: block;
+            margin: 30px auto 10px;      /* 上に少し余白を開ける */
+            padding: 12px 50px;          /* 横幅を広めに */
+            background-color: #fff;      /* 背景は白 */
+            color: #3498db;              /* 文字はサイトのテーマカラーの青 */
+            border: 2px solid #3498db;   /* 枠線を青く */
+            border-radius: 30px;         /* 丸みを強くしてカプセル型に */
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            transition: all 0.3s ease;   /* ふわっと変化させる */
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2); /* 薄い青の影をつける */
+        `;
+        
+        // マウスを乗せた時の動き（青く反転）
+        loadMoreBtn.onmouseover = () => {
+            loadMoreBtn.style.background = "#3498db";
+            loadMoreBtn.style.color = "#fff";
+            loadMoreBtn.style.boxShadow = "0 6px 14px rgba(52, 152, 219, 0.4)";
+            loadMoreBtn.style.transform = "translateY(-2px)"; // 少し浮き上がる
+        };
+        
+        // マウスを離した時の動き（元に戻す）
+        loadMoreBtn.onmouseout = () => {
+            loadMoreBtn.style.background = "#fff";
+            loadMoreBtn.style.color = "#3498db";
+            loadMoreBtn.style.boxShadow = "0 4px 10px rgba(52, 152, 219, 0.2)";
+            loadMoreBtn.style.transform = "translateY(0)";
+        };
+        
+        loadMoreBtn.onclick = () => {
+            if (container.loadMore) {
+                loadMoreBtn.textContent = "読み込み中...";
+                loadMoreBtn.style.opacity = "0.7";
+                loadMoreBtn.style.cursor = "wait";
+                loadMoreBtn.disabled = true;
+                container.loadMore();
+            }
+        };
+        // ▲▲▲ デザイン修正ここまで ▲▲▲
+        
+        container.appendChild(loadMoreBtn);
+    }
   }
-
-  const currentType = currentRankingTypes[genreId] || 'score';
-
-  books.forEach((book, index) => {
-      container.appendChild(createBookCard(book, index + 1, currentType)); 
-  });
-}
-
+  
 function updateChart(genreId, books) {
     const ctx = document.getElementById(`chart-${genreId}`);
     if (!ctx) return;
     const limitEl = document.getElementById(`chart-limit-${genreId}`);
-    const displayCount = limitEl ? parseInt(limitEl.value, 10) : 10; // デフォルト10に変更
+    const displayCount = limitEl ? parseInt(limitEl.value, 10) : 10;
     const topBooks = books.slice(0, displayCount);
     
     const currentType = currentRankingTypes[genreId] || 'score';
-    
-    // スマホ判定（画面幅768px以下ならスマホとみなす）
     const isMobile = window.innerWidth <= 768;
-  
-    // ラベル作成
-    // スマホ(横グラフ)の場合は少し長くても表示しやすいので12文字、PC(縦グラフ)は10文字でカット
     const cutLength = isMobile ? 12 : 10;
     const labels = topBooks.map(b => b.title.length > cutLength ? b.title.substring(0, cutLength) + '…' : b.title);
     const scores = topBooks.map(b => b[currentType] !== undefined ? b[currentType] : 0);
@@ -379,32 +458,23 @@ function updateChart(genreId, books) {
         chartInstances[genreId].destroy();
     }
     
-    // コンテナの高さ設定
-    // 10件表示だと縦に長くなるので、少し高さを確保
     const wrapper = ctx.parentElement;
     if (wrapper) wrapper.style.height = '350px';
       
-    // 各ジャンルのイメージカラー定義（RGB）
     const genreColorMap = {
-        '2026': '191, 33, 33',  // ★修正：落ち着いたルビーレッド
-        'literature': '21, 101, 192',   // 文芸：青
-        'business':   '46, 125, 50',    // ビジネス：緑
-        'hobby':      '230, 126, 34',   // 趣味・実用：オレンジ
-        'specialized': '106, 27, 154',   // 専門書：紫
-        'children':   '173, 20, 87',   // 児童書：黄色
-        'study':    '0, 131, 143'      // 専門書：濃いグレー
+        '2026': '191, 33, 33', 
+        'literature': '21, 101, 192',
+        'business':   '46, 125, 50',
+        'hobby':      '230, 126, 34',
+        'specialized': '106, 27, 154',
+        'children':   '173, 20, 87',
+        'study':    '0, 131, 143'
     };
 
-    // ジャンルIDに対応する色を取得（未定義ならデフォルトの青）
     const themeRGB = genreColorMap[genreId] || '52, 152, 219';
-
-    // 色を作成（背景は少し透明、枠線は不透明）
     const barColor = `rgba(${themeRGB}, 0.7)`;
     const borderColor = `rgba(${themeRGB}, 1)`;
   
-    // 軸の設定を動的に切り替え
-    // 縦グラフ(PC): indexAxis='x' → y軸がスコア
-    // 横グラフ(スマホ): indexAxis='y' → x軸がスコア
     const scoreAxis = isMobile ? 'x' : 'y';
     const labelAxis = isMobile ? 'y' : 'x';
   
@@ -418,13 +488,11 @@ function updateChart(genreId, books) {
                 borderColor: borderColor,
                 borderWidth: 1,
                 maxBarThickness: 50,
-
-                borderRadius: 8,       // ★棒の角を丸くする（数字が大きいほど丸くなる）                
-                borderSkipped: false,  // ★棒の「根元」も丸くして、カプセルみたいに浮かせる
+                borderRadius: 8,                    
+                borderSkipped: false,
             }]
         },
         options: {
-          // ★ここで向きを決定
           indexAxis: isMobile ? 'y' : 'x', 
           responsive: true,
           maintainAspectRatio: false,
@@ -440,22 +508,19 @@ function updateChart(genreId, books) {
               }
           },
           scales: {
-              // スコア軸（点数）の設定
               [scoreAxis]: { 
                   beginAtZero: true, 
-                  grace: '10%', // 天井に10%の余白
-                  title: { display: !isMobile, text: '獲得スコア' }, // スマホでは狭いのでタイトル省略
+                  grace: '10%',
+                  title: { display: !isMobile, text: '獲得スコア' },
                   ticks: {
                       stepSize: 1,
                       font: { weight: 'bold' }
                   }
               },
-              // ラベル軸（本のタイトル）の設定
               [labelAxis]: {
                   grid: { display: false },
                   ticks: {
                       autoSkip: false,
-                      // PCの場合は斜めにして詰め込む
                       maxRotation: isMobile ? 0 : 45,
                       minRotation: isMobile ? 0 : 45
                   }
@@ -500,7 +565,6 @@ function createBookCard(book, rank = null, displayType = 'score') {
   const scoreColor = displayType === 'score' ? '#e67e22' : '#27ae60';
   const labelPrefix = '★';
   
-  // ▼▼▼ ここから書き換え ▼▼▼
   div.innerHTML = `
       ${rankHtml}
       <div class="book-item">
@@ -509,11 +573,9 @@ function createBookCard(book, rank = null, displayType = 'score') {
               <div class="book-title" title="${book.title}">${book.title}</div>
               <div class="book-author-text" style="font-size:0.85em; color:#666; margin-bottom:5px;">${authorText}</div>
               <div><span class="current-score" style="color:${scoreColor};">${labelPrefix} ${scoreValue}</span></div>
-              <!-- ★ここにAmazonボタンがありましたが、削除して下に移動しました -->
           </div>
       </div>
       
-      <!-- ★移動場所：book-itemの外、rating-areaの前 -->
       <a href="${amazonUrl}" target="_blank" class="amazon-link-btn" onclick="trackClick('${book.id}')">Amazonで見る</a>
 
       <div class="rating-area">
@@ -527,7 +589,6 @@ function createBookCard(book, rank = null, displayType = 'score') {
           }
       </div>
   `;
-  // ▲▲▲ 書き換えここまで ▲▲▲
   
   if (!isVoted) {
       div.querySelectorAll(".btn-vote").forEach(btn => {
@@ -624,11 +685,6 @@ function createExternalBookCard(item) {
   return div;
 }
 
-/* 
-   main.js の handleVote 関数
-   修正：既存の本（ランキング）への投票なので、セキュリティルールに抵触しないよう
-   「点数のみ」を更新する updateDoc に戻します。
-*/
 async function handleVote(book, points, cardElement, currentDisplayType = 'score') {
   const storageKey = `voted_${book.id}`;
   if (localStorage.getItem(storageKey)) {
@@ -666,18 +722,12 @@ async function handleVote(book, points, cardElement, currentDisplayType = 'score
       const scoreIncrement = isBonus ? points * 2 : points;
       const rawIncrement = points;
 
-      // ▼▼▼ 修正箇所 ▼▼▼
-      // ランキングにある本は確実にDBに存在するため、updateDocを使用します。
-      // タイトルやジャンルを含めず、点数だけ更新することでセキュリティエラーを回避します。
       const bookRef = doc(db, "books", book.id);
       await updateDoc(bookRef, {
           score: increment(scoreIncrement),
           raw_score: increment(rawIncrement),
-          // lastUpdated: serverTimestamp() // もし更新日時もルールで禁止されている場合は、この行も削除してください
       });
-      // ▲▲▲ --------------------------------------- ▲▲▲
 
-      // グラフ更新用の通知（既存の本なので book.mainGenre は確実に存在します）
       if (book && book.mainGenre && window.logGenreVote) {
           window.logGenreVote(book.mainGenre);
       }
@@ -689,66 +739,51 @@ async function handleVote(book, points, cardElement, currentDisplayType = 'score
   }
 }
 
-
-/* --------------------------------------------------------------------------
-   ▼▼▼ 最強ジャンル判定ロジック (V6 Hybrid) ▼▼▼
-   OpenBDのCコード(基本・ONIX)と、強力なキーワード判定を組み合わせて
-   新規本登録時のジャンル揺れを徹底的に防ぎます。
-   -------------------------------------------------------------------------- */
-
 // OpenBDのデータ + 本のタイトルを受け取り、最適な target / genre を返す
 function determineSmartGenre(openBdData, title) {
     let cCode = null;
     let target = ['general']; // デフォルト
     let mainGenre = 'general';
 
-    // 1. OpenBDの基本データ (Summary) からCコードを探す
     if (openBdData && openBdData.summary && openBdData.summary.c_code) {
         cCode = openBdData.summary.c_code;
     }
 
-    // 2. なければ、詳細データ (ONIX) の深層からCコードを探す
     if (!cCode && openBdData && openBdData.onix && openBdData.onix.DescriptiveDetail && 
         openBdData.onix.DescriptiveDetail.ProductClassification) {
         const pc = openBdData.onix.DescriptiveDetail.ProductClassification;
-        const found = pc.find(x => x.ProductClassificationType === '04'); // Type 04 = C-Code
+        const found = pc.find(x => x.ProductClassificationType === '04'); 
         if (found && found.ProductClassificationCode) {
             cCode = found.ProductClassificationCode;
         }
     }
 
-    // A. Cコードが見つかった場合の判定
     if (cCode) {
         const first = cCode.charAt(0);
         const second = cCode.charAt(1);
 
-        // ジャンル (mainGenre) の決定
-        if (first === '6' || first === '7') mainGenre = 'study'; // 語学・学習
-        else if (first === '8') mainGenre = 'children';        // 児童
-        else if (first === '2') mainGenre = 'hobby';           // 実用
-        else if (first === '1' || first === '9') mainGenre = 'literature'; // 文芸
-        else if (first === '3') mainGenre = 'business';        // ビジネス
-        else if (first === '4' || first === '5') mainGenre = 'specialized'; // 専門
+        if (first === '6' || first === '7') mainGenre = 'study'; 
+        else if (first === '8') mainGenre = 'children';        
+        else if (first === '2') mainGenre = 'hobby';           
+        else if (first === '1' || first === '9') mainGenre = 'literature'; 
+        else if (first === '3') mainGenre = 'business';        
+        else if (first === '4' || first === '5') mainGenre = 'specialized'; 
         else mainGenre = 'general';
 
-        // ターゲット (target) の決定
         switch (second) {
-            case '1': target = ['general', 'university']; break; // 一般・教養
-            case '2': target = ['elementary']; break;            // 小学生
-            case '3': target = ['junior_high']; break;           // 中学生
-            case '4': target = ['high_school']; break;           // 高校生
-            case '5': target = ['university', 'general']; break; // 専門・大学生
-            case '6': target = ['general']; break;               // 成人
-            case '0': target = ['general']; break;               // 一般
+            case '1': target = ['general', 'university']; break; 
+            case '2': target = ['elementary']; break;            
+            case '3': target = ['junior_high']; break;           
+            case '4': target = ['high_school']; break;           
+            case '5': target = ['university', 'general']; break; 
+            case '6': target = ['general']; break;               
+            case '0': target = ['general']; break;               
             default: target = ['general'];
         }
     }
 
-    // B. キーワード救済 (Keyword-Rescue)
-    // Cコードがない、あるいは「一般」判定だが、タイトルが明らかに学生向けの場合などを上書き
     const text = (title || "").toLowerCase();
     
-    // 【最優先】高校生・受験キーワード (ユーザー要望により大幅増強)
     const HS_KEYWORDS = [
         "大学入試", "大学受験", "共通テスト", "センター試験", "大学入", "大学受",
         "高校生", "高校", "高1", "高2", "高3", 
@@ -763,42 +798,31 @@ function determineSmartGenre(openBdData, title) {
     ];
 
     if (HS_KEYWORDS.some(k => text.includes(k.toLowerCase()))) {
-        // もし既存判定が既に study ならそのまま、そうでなければ study に変更
         return { target: ['high_school'], genre: 'study', cCode: cCode };
     }
 
-    // 中学生
     if (text.includes("中学") || text.includes("高校入試") || text.includes("中1") || text.includes("中2") || text.includes("中3")) {
         return { target: ['junior_high'], genre: 'study', cCode: cCode };
     }
 
-    // 小学生
     if (text.includes("小学") || text.includes("中学入試") || text.includes("中学受験") || text.includes("絵本") || text.includes("図鑑") || text.includes("児童") || text.includes("こども")) {
-        // 絵本などはchildren, 中学受験系はstudyの可能性が高いが、簡易的にchildren/elementaryまたはstudyに振り分ける
         if (text.includes("入試") || text.includes("受験") || text.includes("ドリル")) {
             return { target: ['elementary'], genre: 'study', cCode: cCode };
         }
         return { target: ['elementary'], genre: 'children', cCode: cCode };
     }
     
-    // 大学生・専門
     if (text.includes("大学") || text.includes("論文") || text.includes("研究") || text.includes("学会")) {
         return { target: ['university', 'general'], genre: 'specialized', cCode: cCode };
     }
 
-    // Cコードによる判定が生きているならそれを返す
     if (cCode) {
         return { target: target, genre: mainGenre, cCode: cCode };
     }
 
-    // 完全に不明
     return null;
 }
 
-/**
- * 新規の本への投票（OpenBD対応 & V6ロジック完全統合版）
- * 修正点：管理者用グラフへの通知処理を追加
- */
 async function voteForNewBook(book, points, cardElement) {
     const info = book.volumeInfo || {};
     const title = info.title || "タイトル不明";
@@ -844,22 +868,18 @@ async function voteForNewBook(book, points, cardElement) {
             }
         }
   
-        // 1. Google Books情報で仮構築 (Fallback用)
         const struct = analyzeBookStructure(info);
         let finalGenre = struct.mainGenre;
         let finalTarget = struct.target;
         let finalCCode = null;
   
-        // ▼▼▼ 追加：年の抽出ロジック ▼▼▼
         const pDate = info.publishedDate || "";
         let pYear = null;
         if (pDate.length >= 4) {
             const y = parseInt(pDate.substring(0, 4));
             if (!isNaN(y)) pYear = y;
         }
-        // ▲▲▲ ----------------------- ▲▲▲
   
-        // 2. OpenBDで正確な情報を取得し、V6ロジックで判定
         let isbn = null;
         if (info.industryIdentifiers) {
             const found = info.industryIdentifiers.find(id => id.type === "ISBN_13") 
@@ -874,7 +894,6 @@ async function voteForNewBook(book, points, cardElement) {
                 const json = await res.json();
                 const openBdData = json && json[0] ? json[0] : null;
   
-                // ★最強ロジック呼び出し
                 const smartResult = determineSmartGenre(openBdData, title);
                 
                 if (smartResult) {
@@ -904,17 +923,14 @@ async function voteForNewBook(book, points, cardElement) {
                 image: info.imageLinks?.thumbnail || "",
                 categories: info.categories || [],
                 
-                // ▼▼▼ 修正：日付と年の両方を保存 ▼▼▼
                 publishedDate: pDate,
                 publishedYear: pYear,
                 
-                // 確定したジャンル情報を保存
                 mainGenre: finalGenre,
                 target: finalTarget,
-                subGenres: struct.subGenres, // Google情報由来のサブジャンルは維持
+                subGenres: struct.subGenres, 
                 cCode: finalCCode || null,
                 
-                // 旧互換用
                 genres: [finalGenre, ...struct.subGenres],
                 targetGenres: finalTarget, 
                 votedUsers: []
@@ -924,12 +940,9 @@ async function voteForNewBook(book, points, cardElement) {
         await setDoc(docRef, updateData, { merge: true });
         console.log(`投票完了: ${title}`);
   
-        // ▼▼▼ 追加: 管理者画面のグラフ更新用フック ▼▼▼
-        // これにより、新規登録時のジャンルもグラフに即時反映されます
         if (window.logGenreVote && finalGenre) {
             window.logGenreVote(finalGenre);
         }
-        // ▲▲▲ --------------------------------------- ▲▲▲
   
     } catch (e) {
         console.error("新規投票エラー:", e);
@@ -960,9 +973,6 @@ function initModal() {
   }
 }
 
-/**
- * Google Books APIの情報からジャンル構造を解析する関数（OpenBD失敗時のフォールバック用）
- */
 function analyzeBookStructure(info) {
   const API_SUBGENRE_MAP = {
       "mystery": "mystery", "detective": "mystery", "crime": "mystery",
@@ -982,7 +992,6 @@ function analyzeBookStructure(info) {
       "comics": "manga", "manga": "manga", "graphic novels": "manga"
   };
 
-  // Google判定用にもキーワードを増強
   const TARGET_KEYWORDS = {
       "university": ["大学", "学部", "卒", "資格", "専門", "キャンパス", "論文", "研究"],
       "high_school": ["高校", "大学受験", "共通テスト", "センター試験", "青春", "赤本", "チャート式", "ターゲット", "重要問題集", "数I", "数A", "物理基礎"],
@@ -1003,7 +1012,6 @@ function analyzeBookStructure(info) {
   let targets = new Set();
   let subs = new Set();
 
-  // --- 大ジャンル判定 ---
   if (apiCats.includes("juvenile") || apiCats.includes("children")) {
       main = "children";
       if (fullText.includes("young adult")) targets.add("high_school");
@@ -1042,7 +1050,6 @@ function analyzeBookStructure(info) {
       main = "hobby";
   }
   
-  // --- 大ジャンル判定（キーワード） ---
   if (main === "other") {
     if (fullText.includes("絵本") || fullText.includes("童話") || fullText.includes("こども") || fullText.includes("図鑑") || fullText.includes("小学館")) {
         main = "children";
@@ -1062,7 +1069,6 @@ function analyzeBookStructure(info) {
     else if (fullText.includes("レシピ") || fullText.includes("旅行") || fullText.includes("ガイド")) main = "hobby";
   }
 
-  // --- 小ジャンル判定 ---
   for (const [key, val] of Object.entries(API_SUBGENRE_MAP)) {
       if (apiCats.includes(key)) {
           subs.add(val);
@@ -1072,7 +1078,6 @@ function analyzeBookStructure(info) {
   if (fullText.includes("ファンタジー")) subs.add("fantasy");
   if (fullText.includes("歴史") || fullText.includes("時代")) subs.add("history");
 
-  // --- ターゲット判定（キーワード） ---
   for (const [key, keywords] of Object.entries(TARGET_KEYWORDS)) {
       if (keywords.some(k => fullText.includes(k))) targets.add(key);
   }
@@ -1089,8 +1094,7 @@ function analyzeBookStructure(info) {
 }
 
 /**
- * 2026年セクション専用のセットアップ関数
- * (年別検索 + ジャンル絞り込み + 並び替え対応)
+ * 2026年セクション専用のセットアップ関数（ページネーション対応版）
  */
 function setup2026Section() {
     const sectionId = '2026';
@@ -1103,26 +1107,27 @@ function setup2026Section() {
         if (unsubscribe) unsubscribe();
   
         const container = document.getElementById(`list-${sectionId}`);
-        if(container) container.innerHTML = '<p style="padding:20px; text-align:center;">読み込み中...</p>';
+        // 初回ロード時のみ「読み込み中」
+        if(container && container.childElementCount === 0) {
+            container.innerHTML = '<p style="padding:20px; text-align:center;">読み込み中...</p>';
+        }
   
         const sortField = currentRankingTypes[sectionId] || 'score';
         const filterEl = document.getElementById(`filter-${sectionId}`);
         const selectedGenre = filterEl ? filterEl.value : 'all';
 
-        // クエリの構築
         const constraints = [];
-        
-        // 1. 年の指定 (必須)
         constraints.push(where("publishedYear", "==", 2026));
         
-        // 2. ジャンル絞り込み (選択されている場合)
         if (selectedGenre !== 'all') {
             constraints.push(where("mainGenre", "==", selectedGenre));
         }
 
-        // 3. 並び替え
         constraints.push(orderBy(sortField, "desc"));
-        constraints.push(limit(50));
+        
+        // ★動的なリミット設定
+        const limitCount = currentLimits[sectionId] || 20;
+        constraints.push(limit(limitCount));
   
         const q = query(collection(db, "books"), ...constraints);
   
@@ -1133,17 +1138,13 @@ function setup2026Section() {
             });
             
             loadedBooks[sectionId] = books;
-            
-            // 既存のフィルタ・描画関数を再利用
-            // (genreId='2026' として渡すことで既存ロジックが動くように設計済み)
             applyLocalFilter(sectionId);
             
         }, (error) => {
             console.error("Firebase Error (2026):", error);
             const container = document.getElementById(`list-${sectionId}`);
             if(error.code === 'failed-precondition') {
-               // インデックス不足のエラーが出た場合（複合クエリのため初回は必須）
-               const msg = "【管理者用メッセージ】<br>2026年ランキングのインデックスが必要です。<br>F12コンソールのURLをクリックして作成してください。";
+               const msg = "【管理者用メッセージ】<br>インデックスが必要です。コンソールを確認してください。";
                if(container) container.innerHTML = `<p style="padding:20px; color:red; text-align:center; font-weight:bold;">${msg}</p>`;
             } else {
                if(container) container.innerHTML = '<p style="padding:20px; text-align:center;">エラーが発生しました。</p>';
@@ -1151,39 +1152,35 @@ function setup2026Section() {
         });
     };
   
-    // 初回実行
     fetchAndRender();
   
     // --- イベントリスナー設定 ---
     
-    // ランキング基準（総合/純粋）切り替え
     const rankingTypeSelect = document.getElementById(`ranking-type-${sectionId}`);
     if (rankingTypeSelect) {
         rankingTypeSelect.addEventListener("change", (e) => {
             currentRankingTypes[sectionId] = e.target.value;
             isWebSearching[sectionId] = false;
+            currentLimits[sectionId] = 20; // リセット
             fetchAndRender(); 
         });
     }
   
-    // ジャンル絞り込み切り替え
     const filterSelect = document.getElementById(`filter-${sectionId}`);
     if (filterSelect) {
         filterSelect.addEventListener("change", () => {
+            currentLimits[sectionId] = 20; // リセット
             fetchAndRender();
         });
     }
 
-    // グラフ表示数切り替え
     const limitSelect = document.getElementById(`chart-limit-${sectionId}`);
     if (limitSelect) {
         limitSelect.addEventListener("change", () => {
-            // クエリし直し不要、ローカルのフィルタだけでOK
             applyLocalFilter(sectionId);
         });
     }
   
-    // 検索ボックス
     const searchInput = document.getElementById(`search-${sectionId}`);
     const searchBtn = document.getElementById(`btn-search-${sectionId}`);
     if (searchInput) {
@@ -1207,17 +1204,20 @@ function setup2026Section() {
             });
         }
     }
+
+    // ★「もっと見る」ボタンの処理 (2026年専用)
+    listElement.dataset.genreId = sectionId;
+    listElement.loadMore = () => {
+        currentLimits[sectionId] += 20;
+        fetchAndRender();
+    };
 }
 
-// ---------------
-// おすすめ本を読み込む関数
-// ---------------
 async function loadFeaturedBook() {
     const section = document.getElementById("featured-section");
     if (!section) return;
     
     try {
-        // 1. 設定ファイル(config/featured_book)からIDを取得
         const configSnap = await getDoc(doc(db, "config", "featured_book"));
         
         if (!configSnap.exists()) return; 
@@ -1227,13 +1227,11 @@ async function loadFeaturedBook() {
         
         if (!bookId) return;
 
-        // 2. 本の情報を取得
         const bookSnap = await getDoc(doc(db, "books", bookId));
         
         if (bookSnap.exists()) {
             const book = bookSnap.data();
             
-            // 3. HTMLを表示
             section.innerHTML = `
                 <div class="featured-label">★ 今月のおすすめ</div>
                 <div style="display: flex; gap: 15px; align-items: flex-start;">
@@ -1252,7 +1250,7 @@ async function loadFeaturedBook() {
                     </div>
                 </div>
             `;
-            section.style.display = "block"; // 描画後に表示
+            section.style.display = "block"; 
         }
         
     } catch (e) {
@@ -1260,11 +1258,6 @@ async function loadFeaturedBook() {
     }
 }
 
-/* --------------------------------------------------------------------------
-   ▼▼▼ アクセス解析（PV計測）機能 ▼▼▼
-   -------------------------------------------------------------------------- */
-
-// 今日の日付を "YYYY-MM-DD" 形式の文字列で返す関数
 function getTodayStr() {
     const d = new Date();
     const year = d.getFullYear();
@@ -1273,18 +1266,13 @@ function getTodayStr() {
     return `${year}-${month}-${day}`;
 }
 
-// ページ読み込み時にPVをカウントする関数
 async function trackPageLoad() {
     try {
-        // 1. 全体の累計PV (stats/global - 既存の場所に統合)
-        // page_views フィールドを+1します
         const globalStatsRef = doc(db, "stats", "global");
         await setDoc(globalStatsRef, {
             page_views: increment(1)
         }, { merge: true });
         
-        // 2. 日別のPV (daily_stats/YYYY-MM-DD)
-        // こちらはグラフ用に引き続き記録します
         const todayStr = getTodayStr(); 
         const dailyRef = doc(db, "daily_stats", todayStr);
 
