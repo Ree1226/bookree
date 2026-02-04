@@ -1156,7 +1156,7 @@ function setup2026Section() {
         const selectedGenre = filterEl ? filterEl.value : 'all';
 
         const constraints = [];
-        constraints.push(where("publishedYear", "==", 2026));
+        constraints.push(where("publishedYear", "in", [2025, 2026]));
         
         if (selectedGenre !== 'all') {
             constraints.push(where("mainGenre", "==", selectedGenre));
