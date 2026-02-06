@@ -1272,7 +1272,7 @@ async function loadFeaturedBook() {
             const book = bookSnap.data();
             
             section.innerHTML = `
-                <div class="featured-label">★ 今月のおすすめ</div>
+                <div class="featured-label">★ 今月のピックアップ</div>
                 <div style="display: flex; gap: 15px; align-items: flex-start;">
                     <img src="${book.image || 'https://via.placeholder.com/100x140?text=No+Image'}" 
                          style="width: 80px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); object-fit: cover;">
