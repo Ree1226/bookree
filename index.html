@@ -35,7 +35,7 @@
             
             <!-- 1. ランキングの仕組み（左側に配置） -->
             <button id="rankingRuleBtn" class="action-btn">
-                <span style="margin-right: 6px;">ℹ️</span> ランキングの仕組み
+                <span style="margin-right: 6px;">ℹ️</span> ランキングについて
             </button>
 
             <!-- 2. お問い合わせ（右側に配置） -->
@@ -52,7 +52,7 @@
     <section class="genre-section" id="section-2026">
         <!-- スタイルで文字色を赤(#e60012)に指定し、文言を変更 -->
         <!-- 文字色を落ち着いた赤(#bf2121)にし、下線も同じ色で引く -->
-        <h2>🔥 最新トレンド（2026年出版）</h2>        
+        <h2>🔥 最新トレンド</h2>        
         <div class="genre-top-area">
             <div class="chart-wrapper">
                 <canvas id="chart-2026"></canvas>
@@ -433,6 +433,7 @@
             当サイトでは、ユーザーの皆様からの投票（1〜5点）を集計し、リアルタイムでランキングを作成しています。
         </p>
 
+        <!-- 1. ポイント2倍 ブースト対象 -->
         <div style="background-color: #f0f8ff; padding: 15px; border-radius: 8px; border: 1px solid #bdc3c7;">
             <h3 style="color: #e67e22; margin-top: 0; display: flex; align-items: center;">
                 <span style="font-size: 1.5em; margin-right: 10px;">🏆</span> 
@@ -442,7 +443,7 @@
                 多くの読者に支持されるべき「話題作」や「名著」を見逃さないよう、以下の条件に該当する本は<strong>点数が2倍</strong>で加算されます。
             </p>
             
-            <ul style="list-style: none; padding: 0; font-size: 0.95em; line-height: 1.8;">
+            <ul style="list-style: none; padding: 0; font-size: 0.95em; line-height: 1.8; margin-bottom: 15px;">
                 <li>
                     <strong>👑 三大主要賞：</strong><br>
                     <span style="color: #555;">本屋大賞 / 直木賞 / 芥川賞</span>
@@ -456,13 +457,41 @@
                     <span style="color: #555;">映画・ドラマ・アニメ化作品 / ベストセラー（部数突破）</span>
                 </li>
             </ul>
+
+            <!-- ★注釈を枠内に移動しました★ -->
+            <p style="font-size: 0.8em; color: #7f8c8d; border-top: 1px dashed #bdc3c7; pt: 10px; margin-top: 10px; line-height: 1.4;">
+                ※Google Booksの登録データ（説明文）に基づき自動判定しています。
+                そのため、<strong>受賞作であっても説明文に記載がない場合はボーナス対象外</strong>となることがあります。あらかじめご了承ください。
+            </p>
         </div>
 
-        <p style="font-size: 0.8em; color: #7f8c8d; margin-top: 20px; text-align: right; line-height: 1.4;">
-            ※Google Booksの登録データ（説明文）に基づき自動判定しています。<br>
-            そのため、<strong>受賞作であっても説明文に記載がない場合はボーナス対象外</strong>となることがあります。<br>
-            あらかじめご了承ください。
-        </p>
+        <!-- 2. 最新トレンドの定義 -->
+        <div style="background-color: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #fab1a0; margin-top: 20px;">
+            <h3 style="color: #bf2121; margin-top: 0; display: flex; align-items: center;">
+                <span style="font-size: 1.5em; margin-right: 10px;">🔥</span> 
+                最新トレンドの定義
+            </h3>
+            <p style="font-size: 0.9em; margin-bottom: 10px;">
+                「最新トレンド」ランキングでは、新しい本との出会いを促進するため、以下の基準で作品を表示しています。
+            </p>
+            <ul style="list-style: none; padding: 0; font-size: 0.95em; line-height: 1.7;">
+                <li>
+                    <strong>📅 対象出版年：</strong><br>
+                    <span style="color: #555;">2025年 および 2026年に出版された本</span>
+                </li>
+                <li style="margin-top: 10px;">
+                    <strong>📖 データの扱いについて：</strong><br>
+                    <span style="color: #555;">出版年はGoogle Booksのデータに基づきます。そのため、実際の初版年と異なる場合があります。</span>
+                </li>
+                <li style="margin-top: 5px; padding-left: 10px; border-left: 3px solid #ddd; font-size: 0.85em; color: #777;">
+                    例：2022年に単行本化、2025年に文庫化された作品の場合、文庫版のデータ（2025年）としてトレンドに掲載されます。
+                </li>
+                <li style="margin-top: 10px;">
+                    <strong>✨ スコアの合算：</strong><br>
+                    <span style="color: #555;">同一作品であれば、単行本・文庫本などの版が分かれていても点数は共通で集計されます。評価が分散することはありません。</span>
+                </li>
+            </ul>
+        </div>
     </div>
 </div>
 
