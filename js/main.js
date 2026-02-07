@@ -41,61 +41,124 @@ const GENRES = [
 
 // 学習参考書の階層データ (表示用ラベル)
 const STUDY_HIERARCHY = {
-  general: {
-      label: "一般",
-      subs: [
-          { id: "career_up", label: "キャリアアップ" },
-          { id: "relearning", label: "学び直し・基礎科目" },
-          { id: "liberal_arts", label: "教養・趣味" }
-      ]
-  },
-  university: {
-      label: "大学生",
-      subs: [
-          { id: "department", label: "学科別" },
-          { id: "self_help", label: "自己啓発" },
-          { id: "certification", label: "資格" }
-      ]
-  },
-  high_school: { 
-      label: "高校生",
-      subs: [
-          { id: "subject_based", label: "教科別" },
-          { id: "level_based", label: "レベル別（基礎〜難関）" },
-          { id: "purpose_based", label: "目的別（受験・勉強法）" }
-      ]
-  },
-  junior_high: { 
-      label: "中学生",
-      subs: [
-          { id: "basics", label: "基礎理解" },
-          { id: "hs_exam", label: "高校入試対策" },
-          { id: "weakness", label: "苦手克服" },
-          { id: "comprehensive", label: "総合" },
-          { id: "textbook", label: "教科書準拠" }
-      ]
-  },
-  elementary: {
-      label: "小学生",
-      subs: [
-          { id: "subject_elem", label: "科目別" },
-          { id: "level_elem", label: "レベル別（発展・教科書）" },
-          { id: "purpose_elem", label: "目的別（中受・総復習）" },
-          { id: "format_elem", label: "形式別（ドリル・一問一答）" }
-      ]
-  },
-  infant: { 
-      label: "幼児",
-      subs: [
-          { id: "moji", label: "もじ（ひらがな等）" },
-          { id: "kazu", label: "かず" },
-          { id: "chie", label: "ちえ" },
-          { id: "fingertip", label: "指先・運筆" },
-          { id: "english_kids", label: "英語・アルファベット" },
-          { id: "curiosity", label: "知的好奇心・総合" }
-      ]
-  }
+    univ_general: { // 「一般」と「大学生」を統合
+        label: "大学生・一般",
+        subs: [
+            { id: "career_up", label: "キャリアアップ" },
+            { id: "relearning", label: "学び直し・基礎科目" },
+            { id: "liberal_arts", label: "教養・趣味" }
+        ]
+    },
+    high_school: { 
+        label: "高校生",
+        subs: [
+            { id: "modern_japanese", label: "現代文" },
+            { id: "classic_japanese", label: "古文" },
+            { id: "chinese_classics", label: "漢文" },
+            { id: "math_ia", label: "数学IA" },
+            { id: "math_iib", label: "数学IIB" },
+            { id: "math_iiic", label: "数学IIIC" },
+            { id: "english", label: "英語" },
+            { id: "german", label: "ドイツ語" },
+            { id: "french", label: "フランス語" },
+            { id: "chinese", label: "中国語" },
+            { id: "korean", label: "韓国語" },
+            { id: "world_history", label: "世界史" },
+            { id: "japanese_history", label: "日本史" },
+            { id: "geography", label: "地理" },
+            { id: "ethics", label: "倫理" },
+            { id: "politics_economy", label: "政経" },
+            { id: "chemistry", label: "化学" },
+            { id: "physics", label: "物理" },
+            { id: "biology", label: "生物" },
+            { id: "earth_science", label: "地学" },
+            { id: "informatics", label: "情報" }
+        ]
+    },
+    junior_high: { 
+        label: "中学生",
+        subs: [
+            { id: "japanese_jh", label: "国語" },
+            { id: "math_jh", label: "数学" },
+            { id: "science_jh", label: "理科" },
+            { id: "social_jh", label: "社会" },
+            { id: "english_jh", label: "英語" }
+        ]
+    },
+    elementary: {
+        label: "小学生",
+        subs: [
+            { id: "japanese_elem", label: "国語" },
+            { id: "math_elem", label: "算数" },
+            { id: "science_elem", label: "理科" },
+            { id: "social_elem", label: "社会" },
+            { id: "english_elem", label: "英語" }
+        ]
+    },
+    infant: { 
+        label: "幼児",
+        subs: [] // 小ジャンルによる絞り込みを廃止（空配列）
+    }
 };
+
+// --- 追加：科目判定用のキーワードマップ (移行スクリプトと同じ内容) ---
+const SUBJECT_KEYWORDS = {
+    high_school: {
+        modern_japanese: ["現代文"],
+        classic_japanese: ["古文"],
+        chinese_classics: ["漢文"],
+        math_ia: ['数学I', '数学1', '数学A', '数学Ⅰ', '数学1A', '数学IA'],
+        math_iib: ["数学II", "数学B", "数II", "数B", "数学2"],
+        math_iiic: ["数学III", "数学C", "数III", "数C", "数学3"],
+        english: ["英語", "英単語", "英文法", "English"],
+        german: ["ドイツ語"],
+        french: ["フランス語"],
+        chinese: ["中国語"],
+        korean: ["韓国語"],
+        world_history: ["世界史"],
+        japanese_history: ["日本史"],
+        geography: ["地理"],
+        ethics: ["倫理"],
+        politics_economy: ["政経", "政治・経済"],
+        chemistry: ["化学"],
+        physics: ["物理"],
+        biology: ["生物"],
+        earth_science: ["地学"],
+        informatics: ["情報"]
+    },
+    junior_high: {
+        japanese_jh: ["国語"],
+        math_jh: ["数学"],
+        science_jh: ["理科"],
+        social_jh: ["社会"],
+        english_jh: ["英語", "English"]
+    },
+    elementary: {
+        japanese_elem: ["国語", "漢字"],
+        math_elem: ["算数", "計算"],
+        science_elem: ["理科"],
+        social_elem: ["社会"],
+        english_elem: ["英語", "English"]
+    }
+};
+
+// --- 追加：科目判定ロジック ---
+function detectSubGenre(title, description, target) {
+    const text = (title + " " + (description || "")).toLowerCase();
+    
+    // univ_general の場合は high_school のキーワードを参照する
+    const lookupTarget = target === 'univ_general' ? 'high_school' : target;
+    
+    const subjects = SUBJECT_KEYWORDS[lookupTarget];
+    if (!subjects) return [];
+
+    for (const [subId, keywords] of Object.entries(subjects)) {
+        if (keywords.some(k => text.includes(k.toLowerCase()))) {
+            return [subId];
+        }
+    }
+    return [];
+}
 
 // メモリ保存用
 const loadedBooks = {}; 
@@ -175,44 +238,49 @@ function setupGenreSection(genreId) {
 
   let unsubscribe = null;
 
-  // データを取得・描画する内部関数
-  const fetchAndRender = () => {
-      if (unsubscribe) unsubscribe();
+    // データを取得・描画する内部関数
+    const fetchAndRender = () => {
+        if (unsubscribe) unsubscribe();
 
-      const container = document.getElementById(`list-${genreId}`);
-      // 初回ロード時のみ「読み込み中」を表示（もっと見るの時は消さない）
-      if(container && container.childElementCount === 0) {
-          container.innerHTML = '<p style="padding:20px; text-align:center;">読み込み中...</p>';
-      }
+        const container = document.getElementById(`list-${genreId}`);
+        if(container && container.childElementCount === 0) {
+            container.innerHTML = '<p style="padding:20px; text-align:center;">読み込み中...</p>';
+        }
 
-      const sortField = currentRankingTypes[genreId] || 'score';
-      
-      const constraints = [];
-      constraints.push(where("mainGenre", "==", genreId));
+        const sortField = currentRankingTypes[genreId] || 'score';
+        const constraints = [];
+        constraints.push(where("mainGenre", "==", genreId));
 
-      if (genreId === 'study') {
-          const targetEl = document.getElementById("filter-study-target");
-          const targetVal = targetEl ? targetEl.value : "all";
-          
-          if (targetVal !== "all") {
-              constraints.push(where("target", "array-contains", targetVal));
-          }
-      } else {
-          const filterEl = document.getElementById(`filter-${genreId}`);
-          if (filterEl && filterEl.value !== "all") {
-              const val = filterEl.value;
-              constraints.push(where("subGenres", "array-contains", val));
-          }
-      }
+        // main.js の fetchAndRender 内（195行目付近〜）を以下に差し替え
+        if (genreId === 'study') {
+            const targetEl = document.getElementById("filter-study-target");
+            const targetVal = targetEl ? targetEl.value : "all";
+            const subEl = document.getElementById("filter-study-sub");
+            const subVal = subEl ? subEl.value : "all";
+            
+            // 【重要】Firestoreの制限回避：array-contains は1つだけ使用する
+            if (subVal !== "all") {
+                // サブカテゴリ（数学IAなど）が選択されていれば、それを優先して検索
+                constraints.push(where("subGenres", "array-contains", subVal));
+            } else if (targetVal !== "all") {
+                // サブカテゴリが「すべて」の時のみ、ターゲット（高校生など）で検索
+                constraints.push(where("target", "array-contains", targetVal));
+            }
+        } else {
+            // ...（他のジャンルの処理はそのまま）
+            const filterEl = document.getElementById(`filter-${genreId}`);
+            if (filterEl && filterEl.value !== "all") {
+                const val = filterEl.value;
+                constraints.push(where("subGenres", "array-contains", val));
+            }
+        }
 
-      constraints.push(orderBy(sortField, "desc"));
-      
-      // ★動的なリミット設定
-      const limitCount = currentLimits[genreId] || 20;
-      constraints.push(limit(limitCount));
+        constraints.push(orderBy(sortField, "desc"));
+        const limitCount = currentLimits[genreId] || 20;
+        constraints.push(limit(limitCount));
 
-      const q = query(collection(db, "books"), ...constraints);
-
+        const q = query(collection(db, "books"), ...constraints);
+    
       unsubscribe = onSnapshot(q, (snapshot) => {
           const books = [];
           snapshot.forEach(doc => {
@@ -232,7 +300,7 @@ function setupGenreSection(genreId) {
              if(container) container.innerHTML = '<p style="padding:20px; text-align:center;">エラーが発生しました。</p>';
           }
       });
-  };
+    };
 
   fetchAndRender();
 
@@ -309,12 +377,12 @@ function setupGenreSection(genreId) {
               fetchAndRender();
           });
       }
-      if (subSelect) {
-          subSelect.addEventListener("change", () => {
-              // ローカルフィルタのみで対応（再取得不要）
-              applyLocalFilter(genreId);
-          });
-      }
+        if (subSelect) {
+            subSelect.addEventListener("change", () => {
+                currentLimits[genreId] = 20; // 件数をリセット
+                fetchAndRender(); // ★Firestoreから再取得する
+            });
+        }
   } else {
       const filterSelect = document.getElementById(`filter-${genreId}`);
       if (filterSelect) {
@@ -796,14 +864,14 @@ function determineSmartGenre(openBdData, title) {
         else mainGenre = 'general';
 
         switch (second) {
-            case '1': target = ['general', 'university']; break; 
+            case '1': target = ['univ_general']; break; 
             case '2': target = ['elementary']; break;            
             case '3': target = ['junior_high']; break;           
             case '4': target = ['high_school']; break;           
-            case '5': target = ['university', 'general']; break; 
-            case '6': target = ['general']; break;               
-            case '0': target = ['general']; break;               
-            default: target = ['general'];
+            case '5': target = ['univ_general']; break; 
+            case '6': target = ['univ_general']; break;               
+            case '0': target = ['univ_general']; break;               
+            default: target = ['univ_general'];
         }
     }
 
@@ -838,7 +906,7 @@ function determineSmartGenre(openBdData, title) {
     }
     
     if (text.includes("大学") || text.includes("論文") || text.includes("研究") || text.includes("学会")) {
-        return { target: ['university', 'general'], genre: 'specialized', cCode: cCode };
+        return { target: ['univ_general'], genre: 'specialized', cCode: cCode };
     }
 
     if (cCode) {
@@ -955,6 +1023,18 @@ async function voteForNewBook(book, points, cardElement) {
             lastUpdated: serverTimestamp()
         };
   
+        // --- 追加：詳細な科目判定 ---
+        let finalSubGenres = struct.subGenres;
+        if (finalGenre === 'study') {
+            for (const t of finalTarget) {
+                const detected = detectSubGenre(title, info.description || "", t);
+                if (detected.length > 0) {
+                    finalSubGenres = detected;
+                    break; 
+                }
+            }
+        }
+
         if (!isMerge) {
             Object.assign(updateData, {
                 authors: info.authors || ["著者不明"],
@@ -967,10 +1047,10 @@ async function voteForNewBook(book, points, cardElement) {
                 
                 mainGenre: finalGenre,
                 target: finalTarget,
-                subGenres: struct.subGenres, 
+                subGenres: finalSubGenres, 
                 cCode: finalCCode || null,
                 
-                genres: [finalGenre, ...struct.subGenres],
+                genres: [finalGenre, ...finalSubGenres],
                 targetGenres: finalTarget, 
                 votedUsers: []
             });
