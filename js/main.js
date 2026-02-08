@@ -143,28 +143,39 @@ const SUBJECT_KEYWORDS = {
 };
 
 // --- 追加：科目判定ロジック ---
+// 修正版：科目を判定する補助関数
 function detectSubGenre(title, description, target) {
     const text = (title + " " + (description || "")).toLowerCase();
-    
-    // univ_general の場合は high_school のキーワードを参照する
-    const lookupTarget = target === 'univ_general' ? 'high_school' : target;
-    
-    const subjects = SUBJECT_KEYWORDS[lookupTarget];
+    const subjects = SUBJECT_KEYWORDS[target];
     if (!subjects) return [];
-
+  
+    let foundSubId = null;
+    let longestMatchLength = 0;
+  
+    // 全ての科目をチェックし、最も長いキーワードで一致したものを採用する
     for (const [subId, keywords] of Object.entries(subjects)) {
-        if (keywords.some(k => text.includes(k.toLowerCase()))) {
-            return [subId];
+        for (const k of keywords) {
+            const lowerK = k.toLowerCase();
+            if (text.includes(lowerK)) {
+                // 「数学I」より「数学III」の方が文字数が長いため、
+                // より具体的な（長い）キーワードに一致した方を優先する
+                if (k.length > longestMatchLength) {
+                    longestMatchLength = k.length;
+                    foundSubId = subId;
+                }
+            }
         }
     }
-    return [];
-}
-
+    
+    return foundSubId ? [foundSubId] : [];
+  }
+  
 // メモリ保存用
 const loadedBooks = {}; 
 const chartInstances = {};
 const isWebSearching = {};
 const currentRankingTypes = {};
+const searchIndices = {}; 
 
 // ★追加：各ジャンルの現在の表示件数を管理 (初期値20)
 const currentLimits = {}; 
@@ -679,37 +690,105 @@ function updateChart(genreId, books) {
     return div;
   }
       
-async function searchExternalBooks(genreId, keyword) {
-  isWebSearching[genreId] = true;
+/**
+ * 外部（Google Books）検索を実行する関数
+ * @param {string} genreId 
+ * @param {string} keyword 
+ * @param {boolean} isLoadMore 追加読み込みかどうか
+ */
+async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
+    isWebSearching[genreId] = true;
+    const container = document.getElementById(`list-${genreId}`);
+    
+    // 新規検索の場合はインデックスをリセットし、画面をクリア
+    if (!isLoadMore) {
+        searchIndices[genreId] = 0;
+        container.innerHTML = `<p style="padding:20px; text-align:center; width:100%;">🔍 検索中...</p>`;
+    } else {
+        // 「もっと見る」ボタンを一時的に無効化
+        const oldBtn = container.querySelector('.search-load-more-btn');
+        if (oldBtn) {
+            oldBtn.textContent = "読み込み中...";
+            oldBtn.disabled = true;
+        }
+    }
 
-  const container = document.getElementById(`list-${genreId}`);
-  container.innerHTML = `<p style="padding:20px; text-align:center; width:100%;">🔍 検索中...</p>`;
-
-  try {
-        const apiKey = "AIzaSyCL88yBdIcEZIh_Zrw-NOmy-QtRCNB0cns";
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=40&key=${apiKey}`);      
+    try {
+        const startIndex = searchIndices[genreId] || 0;
+        const apiKey = "AIzaSyCL88yBdIcEZIh_Zrw-NOmy-QtRCNB0cns"; // 既存のキーを使用
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=20&startIndex=${startIndex}&key=${apiKey}`);      
         const data = await res.json();
 
-      container.innerHTML = ""; 
+        // 新規検索なら一旦クリア
+        if (!isLoadMore) container.innerHTML = ""; 
+        
+        // 古い「もっと見る」ボタンを削除
+        const oldBtn = container.querySelector('.search-load-more-btn');
+        if (oldBtn) oldBtn.remove();
 
-      if (!data.items || data.items.length === 0) {
-          container.innerHTML = `<p style="padding:20px; color:#999; text-align:center; width:100%;">見つかりませんでした。</p>`;
-          return;
-      }
+        if (!data.items || data.items.length === 0) {
+            if (!isLoadMore) {
+                container.innerHTML = `<p style="padding:20px; color:#999; text-align:center; width:100%;">見つかりませんでした。</p>`;
+            }
+            return;
+        }
 
-      data.items.forEach(item => {
-          try {
-              const card = createExternalBookCard(item);
-              container.appendChild(card);
-          } catch (e) {
-              console.warn("特定の本の表示スキップ:", item, e);
-          }
-      });
+        // 本を表示
+        data.items.forEach(item => {
+            try {
+                const card = createExternalBookCard(item);
+                container.appendChild(card);
+            } catch (e) {
+                console.warn("特定の本の表示スキップ:", e);
+            }
+        });
 
-  } catch (err) {
-      console.error(err);
-      container.innerHTML = `<p style="padding:20px; color:red; text-align:center; width:100%;">エラーが発生しました。<br><span style="font-size:0.8em">通信環境を確認してください</span></p>`;
-  }
+        // インデックスを更新（次は20件目から取得）
+        searchIndices[genreId] = startIndex + 20;
+
+        // 次の20件がある場合は「もっと見る」ボタンを追加
+        if (data.items.length === 20) {
+            const loadMoreBtn = document.createElement("button");
+            loadMoreBtn.className = "search-load-more-btn";
+            loadMoreBtn.textContent = "もっと見る (Webからさらに検索)";
+            
+            // デザインを既存の「もっと見る」ボタンと統一
+            loadMoreBtn.style.cssText = `
+                display: block;
+                margin: 30px auto 10px;
+                padding: 12px 50px;
+                background-color: #fff;
+                color: #e67e22;              /* 検索結果なのでオレンジ系に */
+                border: 2px solid #e67e22;
+                border-radius: 30px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 15px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 10px rgba(230, 126, 34, 0.2);
+            `;
+            
+            loadMoreBtn.onmouseover = () => {
+                loadMoreBtn.style.background = "#e67e22";
+                loadMoreBtn.style.color = "#fff";
+                loadMoreBtn.style.transform = "translateY(-2px)";
+            };
+            loadMoreBtn.onmouseout = () => {
+                loadMoreBtn.style.background = "#fff";
+                loadMoreBtn.style.color = "#e67e22";
+                loadMoreBtn.style.transform = "translateY(0)";
+            };
+
+            loadMoreBtn.onclick = () => searchExternalBooks(genreId, keyword, true);
+            container.appendChild(loadMoreBtn);
+        }
+
+    } catch (err) {
+        console.error(err);
+        if (!isLoadMore) {
+            container.innerHTML = `<p style="padding:20px; color:red; text-align:center; width:100%;">エラーが発生しました。</p>`;
+        }
+    }
 }
 
 function createExternalBookCard(item) {
