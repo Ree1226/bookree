@@ -104,13 +104,13 @@ const STUDY_HIERARCHY = {
 // --- 追加：科目判定用のキーワードマップ (移行スクリプトと同じ内容) ---
 const SUBJECT_KEYWORDS = {
     high_school: {
-        modern_japanese: ["現代文"],
+        modern_japanese: ["現代文", "金の漢字", "日本文法"],
         classic_japanese: ["古文"],
         chinese_classics: ["漢文"],
         math_ia: ['数学I', '数学1', '数学A', '数学Ⅰ', '数学1A', '数学IA'],
         math_iib: ["数学II", "数学B", "数II", "数B", "数学2"],
         math_iiic: ["数学III", "数学C", "数III", "数C", "数学3"],
-        english: ["英語", "英単語", "英文法", "English"],
+        english: ["英語", "英単語", "英文法", "English", "NextStage", "Next Stage", "ネクステ", "Vintage", "ターゲット"],
         german: ["ドイツ語"],
         french: ["フランス語"],
         chinese: ["中国語"],
@@ -630,8 +630,10 @@ function updateChart(genreId, books) {
         coverHtml = `<div class="book-cover-placeholder">No Image</div>`;
     }
   
-    const searchQuery = `${book.title} ${authorText}`;
-    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery)}`;
+    // 検索用に先頭の著者のみを抽出（表示用は authorText をそのまま使用）
+    const firstAuthor = (book.authors && book.authors.length > 0) ? book.authors[0] : (book.author || "");
+    const searchQuery = `${book.title} ${firstAuthor}`;
+    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}`;
     const isVoted = localStorage.getItem(`voted_${book.id}`);
   
     let rankHtml = '';
@@ -810,8 +812,10 @@ function createExternalBookCard(item) {
       coverHtml = `<div class="book-cover-placeholder">No Image</div>`;
   }
 
-  const searchQuery = `${title} ${authors}`;
-  const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery)}`;
+  // 検索用に先頭の著者のみを抽出
+  const firstAuthor = (info.authors && info.authors.length > 0) ? info.authors[0] : "";
+  const searchQuery = `${title} ${firstAuthor}`;
+  const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}`;
   const isVoted = localStorage.getItem(`voted_${item.id}`);
 
   div.innerHTML = `
@@ -956,6 +960,8 @@ function determineSmartGenre(openBdData, title) {
 
     const text = (title || "").toLowerCase();
     
+    const allHighSchoolWords = Object.values(SUBJECT_KEYWORDS.high_school).flat();
+
     const HS_KEYWORDS = [
         "大学入試", "大学受験", "共通テスト", "センター試験", "大学入", "大学受",
         "高校生", "高校", "高1", "高2", "高3", 
@@ -966,7 +972,8 @@ function determineSmartGenre(openBdData, title) {
         "物理のエッセンス", "良問の風", "名問の森", "重要問題集", "重問", "セミナー", "リードα",
         "山川", "一問一答", "用語集", "標準問題精講", "基礎問題精講", "入門問題精講",
         "鉄緑会", "東大", "京大", "医学部", "難関",
-        "古文", "漢文", "物理基礎", "化学基礎", "生物基礎", "地学基礎", "数i", "数ii", "数iii", "数a", "数b", "数c", "マドンナ古文", "ゴロゴ"
+        "古文", "漢文", "物理基礎", "化学基礎", "生物基礎", "地学基礎", "数i", "数ii", "数iii", "数a", "数b", "数c", "マドンナ古文", "ゴロゴ",
+        ...allHighSchoolWords
     ];
 
     if (HS_KEYWORDS.some(k => text.includes(k.toLowerCase()))) {
@@ -1429,7 +1436,9 @@ async function loadFeaturedBook() {
         
         if (bookSnap.exists()) {
             const book = bookSnap.data();
-            
+            const firstAuthor = (book.authors && book.authors.length > 0) ? book.authors[0] : (book.author || "");            
+            const searchQuery = `${book.title} ${firstAuthor}`.trim();
+
             section.innerHTML = `
                 <div class="featured-label">★ 今月のピックアップ</div>
                 <div style="display: flex; gap: 15px; align-items: flex-start;">
@@ -1440,8 +1449,7 @@ async function loadFeaturedBook() {
                         <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;">
                             ${book.authors ? book.authors.join(", ") : "著者不明"}
                         </p>
-                        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(book.title)}" target="_blank" 
-                           onclick="trackClick('${bookId}')"
+                        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}" target="_blank"                            onclick="trackClick('${bookId}')"
                            style="background: #27ae60; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; display: inline-block;">
                            Amazonで見る ↗
                         </a>
