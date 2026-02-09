@@ -105,11 +105,11 @@ const STUDY_HIERARCHY = {
 const SUBJECT_KEYWORDS = {
     high_school: {
         modern_japanese: ["現代文", "金の漢字", "日本文法"],
-        classic_japanese: ["古文"],
+        classic_japanese: ["古文", "古典文法"],
         chinese_classics: ["漢文"],
-        math_ia: ['数学I', '数学1', '数学A', '数学Ⅰ', '数学1A', '数学IA'],
-        math_iib: ["数学II", "数学B", "数II", "数B", "数学2"],
-        math_iiic: ["数学III", "数学C", "数III", "数C", "数学3"],
+        math_ia: ["数学I" /*アルファベットのアイ*/, "数学Ⅰ" /*ローマ数字（1文字）*/, '数学A', "数Ⅰ", "数I", '数A', '数学1'],
+        math_iib: ["数学II" /*アルファベットのアイ2つ*/, "数学Ⅱ" /*ローマ数字（1文字）*/, "数学B", "数Ⅱ", "数II", "数B", "数学2"],
+        math_iiic: ["数学III" /*アルファベットのアイ3つ*/, "数学Ⅲ" /*ローマ数字（1文字）*/, "数学C", "数Ⅲ", "数III", "数C", "数学3"],
         english: ["英語", "英単語", "英文法", "English", "NextStage", "Next Stage", "ネクステ", "Vintage", "ターゲット"],
         german: ["ドイツ語"],
         french: ["フランス語"],
@@ -142,33 +142,48 @@ const SUBJECT_KEYWORDS = {
     }
 };
 
-// --- 追加：科目判定ロジック ---
-// 修正版：科目を判定する補助関数
+// --- ：科目判定ロジック ---
 function detectSubGenre(title, description, target) {
     const text = (title + " " + (description || "")).toLowerCase();
     const subjects = SUBJECT_KEYWORDS[target];
     if (!subjects) return [];
-  
-    let foundSubId = null;
-    let longestMatchLength = 0;
-  
-    // 全ての科目をチェックし、最も長いキーワードで一致したものを採用する
+
+    let allMatches = [];
+
+    // 1. まず、すべての科目のすべてのキーワードについて、出現位置（開始・終了）をすべて記録する
     for (const [subId, keywords] of Object.entries(subjects)) {
         for (const k of keywords) {
-            const lowerK = k.toLowerCase();
-            if (text.includes(lowerK)) {
-                // 「数学I」より「数学III」の方が文字数が長いため、
-                // より具体的な（長い）キーワードに一致した方を優先する
-                if (k.length > longestMatchLength) {
-                    longestMatchLength = k.length;
-                    foundSubId = subId;
-                }
+            const keywordLower = k.toLowerCase();
+            let pos = text.indexOf(keywordLower);
+            while (pos !== -1) {
+                allMatches.push({
+                    subId: subId,
+                    start: pos,
+                    end: pos + keywordLower.length,
+                    length: keywordLower.length
+                });
+                // 同じ単語が複数回出てくる場合のために次を探す
+                pos = text.indexOf(keywordLower, pos + 1);
             }
         }
     }
-    
-    return foundSubId ? [foundSubId] : [];
-  }
+
+    // 2. 包含関係をチェックして、他の長い単語の一部になっているものを排除する
+    const filteredMatches = allMatches.filter((m1, i1) => {
+        // m1 が他のマッチ m2 に完全に包まれているかチェック
+        const isSubset = allMatches.some((m2, i2) => {
+            if (i1 === i2) return false;
+            // m1がm2の範囲内に完全に収まっており、かつm2の方が長い（または同じ長さで別物）場合
+            const contained = m2.start <= m1.start && m2.end >= m1.end;
+            const m2IsBetter = m2.length > m1.length || (m2.length === m1.length && i2 < i1);
+            return contained && m2IsBetter;
+        });
+        return !isSubset;
+    });
+
+    // 3. 残ったマッチから subId を取り出し、重複を削って返す
+    return [...new Set(filteredMatches.map(m => m.subId))];
+}
   
 // メモリ保存用
 const loadedBooks = {}; 
@@ -1112,12 +1127,17 @@ async function voteForNewBook(book, points, cardElement) {
         // --- 追加：詳細な科目判定 ---
         let finalSubGenres = struct.subGenres;
         if (finalGenre === 'study') {
+            let allDetected = [];
             for (const t of finalTarget) {
                 const detected = detectSubGenre(title, info.description || "", t);
                 if (detected.length > 0) {
-                    finalSubGenres = detected;
-                    break; 
+                    // 見つかった科目をすべて追加
+                    allDetected = [...allDetected, ...detected];
                 }
+            }
+            // 重複を排除して最終的なサブジャンルにする
+            if (allDetected.length > 0) {
+                finalSubGenres = [...new Set(allDetected)];
             }
         }
 
