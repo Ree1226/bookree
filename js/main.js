@@ -1158,7 +1158,8 @@ async function voteForNewBook(book, points, cardElement) {
                 
                 genres: [finalGenre, ...finalSubGenres],
                 targetGenres: finalTarget, 
-                votedUsers: []
+                votedUsers: [],
+                createdAt: serverTimestamp()
             });
         }
   

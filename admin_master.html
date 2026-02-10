@@ -159,6 +159,7 @@
                     <th style="width:60px;">IMG</th>
                     <th>タイトル / 著者</th>
                     <th>ジャンル情報</th>
+                    <th style="width:90px;">登録日</th>
                     <th style="width:80px;">出版年</th>
                     <th style="width:80px;">スコア</th>
                     <th style="width:80px; text-align:center;">Amazon<br>クリック</th>
@@ -356,6 +357,12 @@
             const tr = document.createElement("tr");
             tr.id = `row-${b.id}`;
             
+            let dateStr = "未登録";        
+            if (b.createdAt && typeof b.createdAt.toDate === 'function') {
+                const d = b.createdAt.toDate();            
+                dateStr = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;        
+            }
+
             let img = b.image || b.imageLinks?.thumbnail;
             if(!img) img = "https://via.placeholder.com/40x50?text=No";
             
@@ -379,8 +386,9 @@
                 </td>
                 <td>
                     <span class="badge bg-study">${b.mainGenre || "未設定"}</span>
-                    ${targetBadges}
+                    ${targetBadges}${subBadges}
                 </td>
+                <td style="font-size:12px; color:#666;">${dateStr}</td>
                 <!-- ★追加: 出版年を表示 -->
                 <td style="font-size:13px; color:#555;">
                     ${b.publishedYear || "-"}
@@ -483,6 +491,11 @@
                     // 既存データに新しいデータを上書き統合
                     currentBooks[bookIndex] = { ...currentBooks[bookIndex], ...newData };
                     const b = currentBooks[bookIndex];
+
+                    let dateStr = "未登録";if (b.createdAt && typeof b.createdAt.toDate === 'function') {    
+                        const d = b.createdAt.toDate();    
+                        dateStr = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+                    }
 
                     // 3. テーブルの行(HTML)を直接書き換えて、見た目を即時反映させる
                     const tr = document.getElementById(`row-${id}`);
