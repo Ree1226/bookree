@@ -13,7 +13,7 @@ import {
   limit,
   serverTimestamp,
   getDocs,
-  getDoc 
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 /* ===== Firebase 設定 ===== */
@@ -638,13 +638,20 @@ function updateChart(genreId, books) {
     let coverHtml = '';
     const imgData = book.imageLinks || {}; 
     let imgUrl = imgData.thumbnail || imgData.smallThumbnail || book.image;
-    if (imgUrl) {
-        imgUrl = imgUrl.replace('http://', 'https://');
-        coverHtml = `<img src="${imgUrl}" class="book-cover" alt="${book.title}">`;
-    } else {
-        coverHtml = `<div class="book-cover-placeholder">No Image</div>`;
+
+    if (imgUrl) {        
+        imgUrl = getSecureImageUrl(imgUrl);        
+        // 画像読み込みに失敗した場合、自分自身を placeholder に置き換える        
+        coverHtml = `            
+            <img src="${imgUrl}"                  
+            class="book-cover"                  
+            alt="${book.title}"                  
+            onerror="this.onerror=null; this.outerHTML='<div class=&quot;book-cover-placeholder&quot;>No Image</div>';">        
+        `;    
+    } else {        
+        coverHtml = `<div class="book-cover-placeholder">No Image</div>`;    
     }
-  
+
     // 検索用に先頭の著者のみを抽出（表示用は authorText をそのまま使用）
     const firstAuthor = (book.authors && book.authors.length > 0) ? book.authors[0] : (book.author || "");
     const searchQuery = `${book.title} ${firstAuthor}`;
@@ -808,60 +815,80 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
     }
 }
 
+/**
+ * 外部検索結果（Google Books）用のカード作成
+ * ランキング側の createBookCard と見た目を統一
+ */
 function createExternalBookCard(item) {
-  const div = document.createElement("div");
-  div.className = "book-card";
+    const div = document.createElement("div");
+    div.className = "book-card";
 
-  const info = item.volumeInfo || {};
-  const title = info.title || "タイトル不明";
-  const authors = info.authors ? info.authors.join(", ") : "著者不明";
-  
-  let coverHtml = '';
-  const imgData = info.imageLinks || {};
-  let imgUrl = imgData.thumbnail || imgData.smallThumbnail;
+    const info = item.volumeInfo || {};
+    const title = info.title || "タイトル不明";
+    const authors = info.authors ? info.authors.join(", ") : "著者不明";
+    
+    let coverHtml = '';
+    const imgData = info.imageLinks || {};
+    // サムネイルURLを取得。空文字や未定義の場合は placeholder を表示
+    let imgUrl = imgData.thumbnail || imgData.smallThumbnail;
 
-  if (imgUrl) {
-      imgUrl = imgUrl.replace('http://', 'https://');
-      coverHtml = `<img src="${imgUrl}" class="book-cover" alt="${title}">`;
-  } else {
-      coverHtml = `<div class="book-cover-placeholder">No Image</div>`;
-  }
+    if (imgUrl && imgUrl.trim() !== "") {
+        imgUrl = getSecureImageUrl(imgUrl);
+        // onerror を使い、読み込みに失敗した場合は要素自体を「No Image」のHTMLに書き換えます
+        coverHtml = `
+            <img src="${imgUrl}"
+                class="book-cover"
+                alt="${title}"
+                onerror="this.onerror=null; this.outerHTML='<div class=&quot;book-cover-placeholder&quot;>No Image</div>';">
+       `;    
+    } else {
+        // 最初からURLがない場合        
+        coverHtml = `<div class="book-cover-placeholder">No Image</div>`;    
+    }
 
-  // 検索用に先頭の著者のみを抽出
-  const firstAuthor = (info.authors && info.authors.length > 0) ? info.authors[0] : "";
-  const searchQuery = `${title} ${firstAuthor}`;
-  const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}`;
-  const isVoted = localStorage.getItem(`voted_${item.id}`);
+    // Amazon検索用
+    const firstAuthor = (info.authors && info.authors.length > 0) ? info.authors[0] : "";
+    const searchQuery = `${title} ${firstAuthor}`;
+    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}`;
+    const isVoted = localStorage.getItem(`voted_${item.id}`);
 
-  div.innerHTML = `
-      <div class="book-item">
-          ${coverHtml}
-          <div class="book-info">
-              <div class="book-title" title="${title}">${title}</div>
-              <div class="book-author-text" style="font-size:0.85em; color:#666; margin-bottom:5px;">${authors}</div>
-              <div><span class="current-score" style="color:#e67e22; font-weight:bold;"></span></div>
-              <a href="${amazonUrl}" target="_blank" class="amazon-link-btn" style="margin-top:5px; display:inline-block; font-size:0.8em;">Amazon</a>
-          </div>
-      </div>
-      <div class="rating-area">
-          ${isVoted ? 
-             `<div class="voted-message" style="color:#7f8c8d; font-weight:bold; padding:10px 0;">投票済み</div>` : 
-             `<div class="rating-buttons">
-                  <button class="btn-vote" data-val="1">+1</button>
-                  <button class="btn-vote" data-val="3">+3</button>
-                  <button class="btn-vote" data-val="5">+5</button>
-              </div>`
-          }
-      </div>
-  `;
+    // HTML構造をランキング用カードと統一
+    div.innerHTML = `
+        <div class="book-item">
+            ${coverHtml}
+            <div class="book-info">
+                <div class="book-title" title="${title}">${title}</div>
+                <div class="book-author-text" style="font-size:0.85em; color:#666; margin-bottom:5px;">${authors}</div>
+            </div>
+        </div>
+        
+        <!-- Amazonボタンを info の外に出してフル幅に -->
+        <a href="${amazonUrl}" target="_blank" class="amazon-link-btn">Amazonで見る</a>
 
-  if (!isVoted) {
-      div.querySelectorAll(".btn-vote").forEach(btn => {
-          btn.addEventListener("click", () => voteForNewBook(item, parseInt(btn.dataset.val), div));
-      });
-  }
+        <div class="rating-area">
+            ${isVoted ? 
+               `<div style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
+                    <span style="color:#27ae60; background:#eafaf1; border:1px solid #27ae60; font-weight:bold; padding:4px 8px; border-radius:20px; font-size:11px;">
+                      ✔ 投票済
+                    </span>
+                </div>`
+               : 
+               `<div class="rating-buttons">
+                    <button class="btn-vote" data-val="1">+1</button>
+                    <button class="btn-vote" data-val="3">+3</button>
+                    <button class="btn-vote" data-val="5">+5</button>
+                </div>`
+            }
+        </div>
+    `;
 
-  return div;
+    if (!isVoted) {
+        div.querySelectorAll(".btn-vote").forEach(btn => {
+            btn.addEventListener("click", () => voteForNewBook(item, parseInt(btn.dataset.val), div));
+        });
+    }
+
+    return div;
 }
 
 async function handleVote(book, points, cardElement, currentDisplayType = 'score') {
@@ -1145,7 +1172,7 @@ async function voteForNewBook(book, points, cardElement) {
             Object.assign(updateData, {
                 authors: info.authors || ["著者不明"],
                 description: info.description || "",
-                image: info.imageLinks?.thumbnail || "",
+                image: getSecureImageUrl(info.imageLinks?.thumbnail || ""),
                 categories: info.categories || [],
                 
                 publishedDate: pDate,
@@ -1445,33 +1472,38 @@ async function loadFeaturedBook() {
     
     try {
         const configSnap = await getDoc(doc(db, "config", "featured_book"));
-        
         if (!configSnap.exists()) return; 
         
         const configData = configSnap.data();
         const bookId = configData.book_id;
-        
         if (!bookId) return;
 
         const bookSnap = await getDoc(doc(db, "books", bookId));
         
         if (bookSnap.exists()) {
             const book = bookSnap.data();
+            
+            let displayImg = getSecureImageUrl(book.image || (book.imageLinks && book.imageLinks.thumbnail) || "");
+            
             const firstAuthor = (book.authors && book.authors.length > 0) ? book.authors[0] : (book.author || "");            
             const searchQuery = `${book.title} ${firstAuthor}`.trim();
 
             section.innerHTML = `
                 <div class="featured-label">★ 今月のピックアップ</div>
-                <div style="display: flex; gap: 15px; align-items: flex-start;">
-                    <img src="${book.image || 'https://via.placeholder.com/100x140?text=No+Image'}" 
-                         style="width: 80px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); object-fit: cover;">
-                    <div>
-                        <h3 style="margin: 0 0 5px 0; font-size: 18px; color: #2c3e50;">${book.title}</h3>
-                        <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;">
+                <div style="display: flex; gap: 20px; align-items: flex-start; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                    <div style="flex-shrink: 0; width: 100px;">
+                        <img src="${displayImg}" alt="${book.title}" 
+                             style="width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/100x140?text=No+Image';">
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 20px; color: #2c3e50; line-height: 1.4;">${book.title}</h3>
+                        <p style="margin: 0 0 15px 0; font-size: 15px; color: #666;">
                             ${book.authors ? book.authors.join(", ") : "著者不明"}
                         </p>
-                        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}" target="_blank"                            onclick="trackClick('${bookId}')"
-                           style="background: #27ae60; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; display: inline-block;">
+                        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}" target="_blank"
+                           onclick="trackClick('${bookId}')"
+                           style="background: #27ae60; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: bold; display: inline-block;">
                            Amazonで見る ↗
                         </a>
                     </div>
@@ -1513,4 +1545,11 @@ async function trackPageLoad() {
     } catch (e) {
         console.error("Error tracking page view: ", e);
     }
+}
+
+// 画像URLを安全なHTTPSに変換する共通関数
+function getSecureImageUrl(url) {
+    if (!url) return "";
+    // http:// を https:// に置換する
+    return url.replace("http://", "https://");
 }

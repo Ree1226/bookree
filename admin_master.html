@@ -148,6 +148,7 @@
         <input type="text" id="search-input" class="search-box" placeholder="タイトル、著者、IDで検索...">
         <button class="btn btn-search" onclick="runSearch()">🔍 検索</button>
         <button class="btn" style="background:#e67e22; margin-left:10px;" onclick="runSortByClicks()">🔥 注目度順 (クリック数)</button>
+        <button class="btn" style="background:#27ae60; margin-left:10px;" onclick="runSortByDate()">📅 登録日順 (新着順)</button>
         <div style="flex:1;"></div>
         <button class="btn btn-fix" onclick="runBatchSmartFix()">⚡️ 表示中の本を一括修復 (V6)</button>
     </div>
@@ -271,6 +272,12 @@
         }
     };
 
+    // 画像URLを安全なHTTPSに変換する共通関数
+    function getSecureImageUrl(url) {
+        if (!url) return "";
+        return url.replace("http://", "https://");
+    }
+
     // --- データ取得（検索ロジック：前方一致・省エネ確定版） ---
     window.runSearch = async (isMore = false) => {
         const keyword = document.getElementById("search-input").value.trim();
@@ -363,7 +370,7 @@
                 dateStr = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;        
             }
 
-            let img = b.image || b.imageLinks?.thumbnail;
+            let img = getSecureImageUrl(b.image || b.imageLinks?.thumbnail);
             if(!img) img = "https://via.placeholder.com/40x50?text=No";
             
             let targetBadges = "";
@@ -440,6 +447,33 @@
         }
     };
 
+        // --- 追加：登録日順（新着順）で取得 ---
+        window.runSortByDate = async () => {
+        const listEl = document.getElementById("book-list");
+        listEl.innerHTML = ""; // リストをクリア
+        document.getElementById("status-bar").textContent = "登録日順に取得中...";
+
+        try {
+            // createdAt の降順（新しい順）で50件取得
+            const q = query(collection(db, "books"), orderBy("createdAt", "desc"), limit(50));
+            const snapshot = await getDocs(q);
+            
+            const books = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            currentBooks = books;
+            renderRows(books);
+
+            document.getElementById("status-bar").textContent = `新着順 ${books.length}件を表示中`;
+        } catch(e) {
+            console.error(e);
+            // インデックス未作成の場合の案内
+            if(e.message.includes("indexes")) {
+                alert("【重要】Firebaseコンソールでインデックスを作成する必要があります。\nブラウザのコンソール(F12)に表示されているURLをクリックしてインデックスを作成してください。");
+            } else {
+                alert("読み込みエラー: " + e.message);
+            }
+        }
+    };
+
     // --- 編集機能 ---
     window.openEdit = (id) => {
         const book = currentBooks.find(b => b.id === id);
@@ -465,56 +499,50 @@
     window.saveBook = async () => {
         const id = document.getElementById("edit-id").value;
         const targetStr = document.getElementById("edit-target").value;
-        const subGenresStr = document.getElementById("edit-subGenres").value; // サブジャンル取得
+        const subGenresStr = document.getElementById("edit-subGenres").value;
         
-        // データの構築
         const newData = {
             title: document.getElementById("edit-title").value,
             authors: document.getElementById("edit-authors").value.split(",").map(s=>s.trim()),
             mainGenre: document.getElementById("edit-genre").value,
             target: targetStr ? targetStr.split(",").map(s=>s.trim()) : [],
-            // サブジャンルを配列化（空文字は除外）
             subGenres: subGenresStr ? subGenresStr.split(",").map(s=>s.trim()).filter(Boolean) : [],
             publishedYear: parseInt(document.getElementById("edit-publishedYear").value, 10) || null,
             score: parseInt(document.getElementById("edit-score").value, 10),
-            image: document.getElementById("edit-image").value
+            image: getSecureImageUrl(document.getElementById("edit-image").value)
         };
 
         if(confirm("変更を保存しますか？")) {
             try {
-                // 1. Firebaseを更新
                 await updateDoc(doc(db, "books", id), newData);
                 
-                // 2. 画面上のデータ(currentBooks)も更新
                 const bookIndex = currentBooks.findIndex(b => b.id === id);
                 if(bookIndex > -1) {
-                    // 既存データに新しいデータを上書き統合
                     currentBooks[bookIndex] = { ...currentBooks[bookIndex], ...newData };
                     const b = currentBooks[bookIndex];
 
-                    let dateStr = "未登録";if (b.createdAt && typeof b.createdAt.toDate === 'function') {    
+                    // --- 修正ポイント1: 日付文字列の生成 ---
+                    let dateStr = "未登録";
+                    if (b.createdAt && typeof b.createdAt.toDate === 'function') {    
                         const d = b.createdAt.toDate();    
                         dateStr = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
                     }
 
-                    // 3. テーブルの行(HTML)を直接書き換えて、見た目を即時反映させる
                     const tr = document.getElementById(`row-${id}`);
                     if(tr) {
-                        // ▼ここから行のHTML生成（renderRowsと同じロジック）
-                        let img = b.image || "https://via.placeholder.com/40x50?text=No";
+                        let img = getSecureImageUrl(b.image) || "https://via.placeholder.com/40x50?text=No";
                         
                         let targetBadges = "";
                         if(b.target && Array.isArray(b.target)) {
                             targetBadges = b.target.map(t => `<span class="badge bg-target">${t}</span>`).join("");
                         }
 
-                        // ★サブジャンルバッジ生成
                         let subBadges = "";
                         if(b.subGenres && Array.isArray(b.subGenres)) {
                             subBadges = b.subGenres.map(s => `<span class="badge bg-sub">${s}</span>`).join("");
                         }
 
-                        // 行の中身を差し替え
+                        // --- 修正ポイント2: innerHTML に「登録日」の列を追加 ---
                         tr.innerHTML = `
                             <td><img src="${img}" class="thumb"></td>
                             <td>
@@ -525,8 +553,10 @@
                             <td>
                                 <span class="badge bg-study">${b.mainGenre || "未設定"}</span>
                                 ${targetBadges}
-                                ${subBadges} <!-- ★ここに即座に反映されます -->
+                                ${subBadges}
                             </td>
+                            <!-- ★ここに登録日の列を追加 -->
+                            <td style="font-size:12px; color:#666;">${dateStr}</td>
                             <td style="font-size:13px; color:#555;">${b.publishedYear || "-"}</td>
                             <td style="font-weight:bold; color:#e67e22;">★ ${b.score || 0}</td>
                             <td style="text-align:center;">                    
@@ -541,9 +571,7 @@
                                 </div>
                             </td>
                         `;
-                        // ▲ここまで
 
-                        // 更新がわかりやすいように一瞬だけ背景色を変える
                         tr.style.transition = "background 0.5s";
                         tr.style.backgroundColor = "#d5f5e3"; 
                         setTimeout(() => tr.style.backgroundColor = "transparent", 1000);
