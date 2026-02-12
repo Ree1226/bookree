@@ -1227,24 +1227,57 @@ function initModal() {
 }
 
 function analyzeBookStructure(info) {
-  const API_SUBGENRE_MAP = {
-      "mystery": "mystery", "detective": "mystery", "crime": "mystery",
-      "fantasy": "fantasy", "magic": "fantasy",
-      "science fiction": "sf", "space": "sf",
-      "history": "history", "historical": "history",
-      "business": "management", "economics": "management", "management": "management",
-      "finance": "finance", "investment": "finance",
-      "health": "health", "fitness": "health",
-      "medical": "medical", "medicine": "medical",
-      "technology": "science_tech", "engineering": "science_tech", "computer": "science_tech",
-      "art": "art", "design": "art",
-      "language": "language", "education": "education",
-      "mathematics": "math",
-      "science": "science", "physics": "science", "chemistry": "science", "biology": "science",
-      "psychology": "humanities", "philosophy": "humanities",
-      "comics": "manga", "manga": "manga", "graphic novels": "manga"
-  };
-
+    const API_SUBGENRE_MAP = {
+        // ■ 文芸 (Literature)
+        "mystery": "mystery", "detective": "mystery", "crime": "mystery",
+        "fantasy": "fantasy", "magic": "fantasy",
+        "romance": "romance", "love": "romance",
+        "science fiction": "sf", "space": "sf",
+        "history": "history", "historical": "history",
+        "political science": "politics", "politics": "politics",
+        "horror": "horror",
+        "juvenile fiction": "youth", // 青春・ヤングアダルト
+        "drama": "human", // ヒューマンドラマ
+    
+        // ■ ビジネス (Business)
+        "business": "management", "management": "management",
+        "marketing": "marketing", "advertising": "marketing",
+        "leadership": "leadership",
+        "success": "work", "careers": "career",
+        "finance": "finance", "investment": "finance",
+        "economics": "economy",
+        "industries": "industry",
+        "computers": "data", "data": "data",
+    
+        // ■ 趣味・実用 (Hobby)
+        "cooking": "cooking", "housekeeping": "cooking",
+        "family & relationships": "parenting", "parenting": "parenting",
+        "health & fitness": "health", "fitness": "health",
+        "beauty": "beauty", "body, mind & spirit": "beauty",
+        "travel": "travel",
+        "gardening": "gardening",
+        "sports & recreation": "sports",
+        "photography": "camera",
+        "transportation": "railway", // 鉄道など
+        "games & activities": "igo_shogi", // 将棋・囲碁など
+    
+        // ■ 専門書 (Specialized)
+        "philosophy": "humanities", "psychology": "humanities", "religion": "humanities",
+        "social science": "social_science",
+        "technology": "science_tech", "engineering": "science_tech", "science": "science_tech",
+        "medical": "medical", "medicine": "medical",
+        "art": "art", "design": "art",
+        "language arts & disciplines": "language", "foreign language": "language",
+        "study aids": "license", // 資格・試験
+    
+        // ■ 児童書 (Children)
+        "juvenile nonfiction": "nonfiction",
+        "biography & autobiography": "biography",
+        "poetry": "poem",
+        "picture books": "picturebook",
+        "fairy tales": "fairytale"
+    };
+    
   const TARGET_KEYWORDS = {
       "university": ["大学", "学部", "卒", "資格", "専門", "キャンパス", "論文", "研究"],
       "high_school": ["高校", "大学受験", "共通テスト", "センター試験", "青春", "赤本", "チャート式", "ターゲット", "重要問題集", "数I", "数A", "物理基礎"],
@@ -1327,9 +1360,56 @@ function analyzeBookStructure(info) {
           subs.add(val);
       }
   }
-  if (fullText.includes("ミステリー") || fullText.includes("推理")) subs.add("mystery");
-  if (fullText.includes("ファンタジー")) subs.add("fantasy");
-  if (fullText.includes("歴史") || fullText.includes("時代")) subs.add("history");
+// 文芸  
+if (fullText.includes("ミステリー") || fullText.includes("推理")) subs.add("mystery");  
+if (fullText.includes("ファンタジー")) subs.add("fantasy");  
+if (fullText.includes("恋愛") || fullText.includes("ラブコメ") || fullText.includes("恋")) subs.add("romance");  
+if (fullText.includes("sf") || fullText.includes("空想科学")) subs.add("sf");  
+if (fullText.includes("歴史") || fullText.includes("時代")) subs.add("history");  
+if (fullText.includes("政治")) subs.add("politics");  
+if (fullText.includes("ホラー") || fullText.includes("怖い")) subs.add("horror");  
+if (fullText.includes("青春") || fullText.includes("部活")) subs.add("youth");  
+if (fullText.includes("感動") || fullText.includes("ドラマ") || fullText.includes("人間模様")) subs.add("human");  
+if (fullText.includes("ライトノベル") || fullText.includes("ラノベ")) subs.add("lightnovel");  
+if (fullText.includes("官能") || fullText.includes("エロ")) subs.add("sensual");  
+
+// ビジネス  if (fullText.includes("経営")) subs.add("management");  
+if (fullText.includes("マーケティング")) subs.add("marketing");  
+if (fullText.includes("リーダーシップ")) subs.add("leadership");  
+if (fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
+if (fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産")) subs.add("finance");  
+if (fullText.includes("経済")) subs.add("economy");  
+if (fullText.includes("業界")) subs.add("industry");  
+if (fullText.includes("データ") || fullText.includes("人工知能") || fullText.includes("ai")) subs.add("data");  
+if (fullText.includes("キャリア") || fullText.includes("転職")) subs.add("career");  
+
+// 趣味・実用  
+if (fullText.includes("料理") || fullText.includes("レシピ")) subs.add("cooking");  
+if (fullText.includes("育児") || fullText.includes("子育て")) subs.add("parenting");  
+if (fullText.includes("マナー") || fullText.includes("冠婚葬祭")) subs.add("manners");  
+if (fullText.includes("旅行") || fullText.includes("ガイド")) subs.add("travel");  
+if (fullText.includes("将棋") || fullText.includes("囲碁")) subs.add("igo_shogi");  
+if (fullText.includes("スポーツ") || fullText.includes("運動")) subs.add("sports");  
+
+// 専門書  
+if (fullText.includes("人文") || fullText.includes("哲学") || fullText.includes("心理")) subs.add("humanities");  
+if (fullText.includes("社会科学")) subs.add("social_science");  
+if (fullText.includes("理工") || fullText.includes("科学技術")) subs.add("science_tech");  
+if (fullText.includes("医学") || fullText.includes("看護")) subs.add("medical");  
+if (fullText.includes("芸術") || fullText.includes("デザイン")) subs.add("art");  
+if (fullText.includes("語学") || fullText.includes("英語")) subs.add("language");  
+if (fullText.includes("資格") || fullText.includes("検定")) subs.add("license");  
+
+// 児童書  
+if (fullText.includes("絵本")) subs.add("picturebook");  
+if (fullText.includes("図鑑")) subs.add("zukan");  
+if (fullText.includes("学習まんが")) subs.add("study_manga");  
+if (fullText.includes("童話")) subs.add("fairytale");  
+if (fullText.includes("伝記")) subs.add("biography");  
+if (fullText.includes("ノンフィクション")) subs.add("nonfiction");  
+
+// 何もヒットしなかった場合  
+if (subs.size === 0) subs.add("other");
 
   for (const [key, keywords] of Object.entries(TARGET_KEYWORDS)) {
       if (keywords.some(k => fullText.includes(k))) targets.add(key);
