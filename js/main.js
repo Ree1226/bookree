@@ -103,6 +103,11 @@ const STUDY_HIERARCHY = {
 
 // --- 追加：科目判定用のキーワードマップ (移行スクリプトと同じ内容) ---
 const SUBJECT_KEYWORDS = {
+    univ_general: {
+        career_up: ["TOEIC", "TOEFL", "IELTS", "英検", "大学英語","資格試験", "宅建", "簿記", "FP", "ITパスポート","公務員試験", "SPI", "就職活動", "適性検査", "資格"],
+        relearning: ["算数", "数学", "国語", "適性検査", "微分積分", "線形代数", "統計学", "大学数学"],
+        liberal_arts: ["教養", "常識", "雑学"],
+    },
     high_school: {
         modern_japanese: ["現代文", "金の漢字", "日本文法"],
         classic_japanese: ["古文", "古典文法"],
@@ -1361,52 +1366,67 @@ function analyzeBookStructure(info) {
       }
   }
 // 文芸  
-if (fullText.includes("ミステリー") || fullText.includes("推理")) subs.add("mystery");  
+if (fullText.includes("ミステリー") || fullText.includes("推理") || fullText.includes("探偵")) subs.add("mystery");  
 if (fullText.includes("ファンタジー")) subs.add("fantasy");  
 if (fullText.includes("恋愛") || fullText.includes("ラブコメ") || fullText.includes("恋")) subs.add("romance");  
-if (fullText.includes("sf") || fullText.includes("空想科学")) subs.add("sf");  
-if (fullText.includes("歴史") || fullText.includes("時代")) subs.add("history");  
+if (fullText.includes("sf") || fullText.includes("空想科学") || fullText.includes("サイエンスフィクション")) subs.add("sf");  
+if (fullText.includes("歴史") || fullText.includes("時代") || fullText.includes("三国志") || fullText.includes("戦争") || fullText.includes("戦闘機")) subs.add("history");  
 if (fullText.includes("政治")) subs.add("politics");  
 if (fullText.includes("ホラー") || fullText.includes("怖い")) subs.add("horror");  
 if (fullText.includes("青春") || fullText.includes("部活")) subs.add("youth");  
-if (fullText.includes("感動") || fullText.includes("ドラマ") || fullText.includes("人間模様")) subs.add("human");  
+if (fullText.includes("感動") || fullText.includes("ドラマ") || fullText.includes("泣ける")  || fullText.includes("泣いた")|| fullText.includes("人間模様")) subs.add("human");  
 if (fullText.includes("ライトノベル") || fullText.includes("ラノベ")) subs.add("lightnovel");  
 if (fullText.includes("官能") || fullText.includes("エロ")) subs.add("sensual");  
 
-// ビジネス  if (fullText.includes("経営")) subs.add("management");  
-if (fullText.includes("マーケティング")) subs.add("marketing");  
-if (fullText.includes("リーダーシップ")) subs.add("leadership");  
-if (fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
-if (fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産")) subs.add("finance");  
-if (fullText.includes("経済")) subs.add("economy");  
+// ビジネス  
+if (fullText.includes("戦略") || fullText.includes("起業") || fullText.includes("経営")) subs.add("management");  
+if (fullText.includes("販促") || fullText.includes("マーケティング")) subs.add("marketing");  
+if (fullText.includes("リーダー") || fullText.includes("リーダーシップ")) subs.add("leadership");  
+if (fullText.includes("仕事") || fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
+if (fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産")) subs.add("finance");  
+if (fullText.includes("政治") || fullText.includes("経済")) subs.add("economy");  
 if (fullText.includes("業界")) subs.add("industry");  
 if (fullText.includes("データ") || fullText.includes("人工知能") || fullText.includes("ai")) subs.add("data");  
 if (fullText.includes("キャリア") || fullText.includes("転職")) subs.add("career");  
 
 // 趣味・実用  
-if (fullText.includes("料理") || fullText.includes("レシピ")) subs.add("cooking");  
+if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子")) subs.add("cooking");  
 if (fullText.includes("育児") || fullText.includes("子育て")) subs.add("parenting");  
-if (fullText.includes("マナー") || fullText.includes("冠婚葬祭")) subs.add("manners");  
-if (fullText.includes("旅行") || fullText.includes("ガイド")) subs.add("travel");  
-if (fullText.includes("将棋") || fullText.includes("囲碁")) subs.add("igo_shogi");  
-if (fullText.includes("スポーツ") || fullText.includes("運動")) subs.add("sports");  
+if (fullText.includes("健康") || fullText.includes("ヨガ") || fullText.includes("筋トレ") || fullText.includes("フィットネス")) subs.add("health");
+if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア")) subs.add("beauty");  
+if (fullText.includes("マナー") || fullText.includes("冠婚葬祭") || fullText.includes("結婚式") || fullText.includes("葬式") || fullText.includes("法要") || fullText.includes("法事")) subs.add("manners");  
+if (fullText.includes("旅行") || fullText.includes("ガイド") || fullText.includes("観光") || fullText.includes("名所") || fullText.includes("パワースポット")) subs.add("travel");  
+if (fullText.includes("園芸") || fullText.includes("盆栽") || fullText.includes("植木") || fullText.includes("芝生") || fullText.includes("生花")) subs.add("gardening");
+if (fullText.includes("スポーツ") || fullText.includes("運動") || fullText.includes("野球") || fullText.includes("サッカー") || fullText.includes("テニス") || fullText.includes("ゴルフ") || fullText.includes("水泳") || fullText.includes("バスケ")) subs.add("sports");  
+if (fullText.includes("カメラ") || fullText.includes("一眼") || fullText.includes("写真") || fullText.includes("フォト")) subs.add("camera");  
+if (fullText.includes("鉄道") || fullText.includes("撮り鉄")) subs.add("railway");  
+if (fullText.includes("将棋") || fullText.includes("囲碁") || fullText.includes("チェス") || fullText.includes("麻雀") || fullText.includes("飛車")) subs.add("igo_shogi");  
 
 // 専門書  
-if (fullText.includes("人文") || fullText.includes("哲学") || fullText.includes("心理")) subs.add("humanities");  
+if (fullText.includes("人文") || fullText.includes("哲学") || fullText.includes("心理") || fullText.includes("倫理")) subs.add("humanities");  
 if (fullText.includes("社会科学")) subs.add("social_science");  
-if (fullText.includes("理工") || fullText.includes("科学技術")) subs.add("science_tech");  
-if (fullText.includes("医学") || fullText.includes("看護")) subs.add("medical");  
-if (fullText.includes("芸術") || fullText.includes("デザイン")) subs.add("art");  
+if (fullText.includes("理工") || fullText.includes("科学技術") || fullText.includes("機械") || fullText.includes("建築")) subs.add("science_tech");  
+if (fullText.includes("医学") || fullText.includes("看護") || fullText.includes("医療")) subs.add("medical");  
+if (fullText.includes("芸術") || fullText.includes("デザイン") || fullText.includes("アート")) subs.add("art");  
 if (fullText.includes("語学") || fullText.includes("英語")) subs.add("language");  
 if (fullText.includes("資格") || fullText.includes("検定")) subs.add("license");  
 
 // 児童書  
-if (fullText.includes("絵本")) subs.add("picturebook");  
-if (fullText.includes("図鑑")) subs.add("zukan");  
-if (fullText.includes("学習まんが")) subs.add("study_manga");  
-if (fullText.includes("童話")) subs.add("fairytale");  
-if (fullText.includes("伝記")) subs.add("biography");  
+if (fullText.includes("絵本")) subs.add("picturebook");
+if (fullText.includes("童話")) subs.add("fairytale");
+if (fullText.includes("ファンタジー")) subs.add("fantasy");
+if (fullText.includes("SF") || fullText.includes("エスエフ")) subs.add("sf");
+if (fullText.includes("ミステリー")) subs.add("mystery");  
+if (fullText.includes("歴史") || fullText.includes("れきし")) subs.add("history");  
 if (fullText.includes("ノンフィクション")) subs.add("nonfiction");  
+if (fullText.includes("詩") || fullText.includes("ポエム")) subs.add("poem");  
+if (fullText.includes("伝記")) subs.add("biography");  
+if (fullText.includes("学習まんが")) subs.add("study_manga");  
+if (fullText.includes("図鑑") || fullText.includes("ずかん")) subs.add("zukan");  
+
+// 学習参考書
+if (fullText.includes("確率") || fullText.includes("整数")) subs.add("math_ia");
+if (fullText.includes("ベクトル") || fullText.includes("漸化式")) subs.add("math_iib");
 
 // 何もヒットしなかった場合  
 if (subs.size === 0) subs.add("other");
