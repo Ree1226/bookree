@@ -149,6 +149,91 @@
         <button class="btn btn-search" onclick="runSearch()">🔍 検索</button>
         <button class="btn" style="background:#e67e22; margin-left:10px;" onclick="runSortByClicks()">🔥 注目度順 (クリック数)</button>
         <button class="btn" style="background:#27ae60; margin-left:10px;" onclick="runSortByDate()">📅 登録日順 (新着順)</button>
+        <select id="subgenre-filter" class="search-box" style="flex: 0 1 200px; margin-left: 10px;" onchange="runSubGenreFilter()">
+            <option value="">-- サブジャンルで絞り込み --</option>
+            <optgroup label="文芸">
+                <option value="mystery">ミステリー</option>
+                <option value="fantasy">ファンタジー</option>
+                <option value="romance">恋愛</option>
+                <option value="sf">SF</option>
+                <option value="history">歴史・時代</option>
+                <option value="politics">政治</option>
+                <option value="horror">ホラー</option>
+                <option value="youth">青春</option>
+                <option value="human">ヒューマンドラマ</option>
+                <option value="lightnovel">ライトノベル</option>
+                <option value="sensual">官能</option>
+            </optgroup>
+            <optgroup label="ビジネス">
+                <option value="management">経営</option>
+                <option value="marketing">マーケティング</option>
+                <option value="leadership">リーダーシップ</option>
+                <option value="work">仕事術</option>
+                <option value="finance">投資・金融</option>
+                <option value="economy">経済</option>
+                <option value="industry">業界研究</option>
+                <option value="data">データ・AI活用</option>
+                <option value="career">キャリア（転職・独立）</option>
+            </optgroup>
+            <optgroup label="趣味・実用">
+                <option value="cooking">料理</option>
+                <option value="parenting">育児</option>
+                <option value="health">健康</option>
+                <option value="beauty">美容</option>
+                <option value="manners">冠婚葬祭・マナー</option>
+                <option value="travel">旅行</option>
+                <option value="gardening">園芸</option>
+                <option value="sports">スポーツ</option>
+                <option value="camera">カメラ</option>
+                <option value="railway">鉄道</option>
+                <option value="igo_shogi">将棋・囲碁</option>
+            </optgroup>
+            <optgroup label="専門書">
+                <option value="humanities">人文科学</option>
+                <option value="social_science">社会科学</option>
+                <option value="science_tech">理工学</option>
+                <option value="medical">医学・看護学</option>
+                <option value="art">芸術</option>
+                <option value="language">語学</option>
+                <option value="license">資格</option>
+            </optgroup>
+            <optgroup label="児童書">
+                <option value="picturebook">絵本</option>
+                <option value="fairytale">童話</option>
+                <option value="fantasy">ファンタジー</option>
+                <option value="sf">SF</option>
+                <option value="mystery">ミステリー</option>
+                <option value="history">歴史</option>
+                <option value="nonfiction">ノンフィクション</option>
+                <option value="poem">詩</option>
+                <option value="biography">伝記</option>
+                <option value="study_manga">学習マンガ</option>
+                <option value="zukan">図鑑</option>
+            </optgroup>
+            <optgroup label="学習参考書">
+                <option value="modern_japanese">現代文</option>
+                <option value="classic_japanese">古文</option>
+                <option value="chinese_classics">漢文</option>
+                <option value="math_ia">数学IA</option>
+                <option value="math_iib">数学IIB</option>
+                <option value="math_iiic">数学IIIC</option>
+                <option value="english">英語</option>
+                <option value="german">ドイツ語</option>
+                <option value="french">フランス語</option>
+                <option value="chinese">中国語</option>
+                <option value="korean">韓国語</option>
+                <option value="world_history">世界史</option>
+                <option value="japanese_history">日本史</option>
+                <option value="geography">地理</option>
+                <option value="ethics">倫理</option>
+                <option value="politics_economy">政経</option>
+                <option value="chemistry">化学</option>
+                <option value="physics">物理</option>
+                <option value="biology">生物</option>
+                <option value="earth_science">地学</option>
+                <option value="informatics">情報</option>
+            </optgroup>
+        </select>
         <div style="flex:1;"></div>
         <button class="btn btn-fix" onclick="runBatchSmartFix()">⚡️ 表示中の本を一括修復 (V6)</button>
     </div>
@@ -471,6 +556,46 @@
             } else {
                 alert("読み込みエラー: " + e.message);
             }
+        }
+    };
+
+    // --- 追加：サブジャンルでの絞り込み ---
+    window.runSubGenreFilter = async () => {
+        const subGenre = document.getElementById("subgenre-filter").value;
+        const listEl = document.getElementById("book-list");
+        
+        // 選択が空（デフォルト）に戻された場合は、通常の検索（最新順）を実行
+        if (!subGenre) {
+            runSearch();
+            return;
+        }
+
+        listEl.innerHTML = "";
+        document.getElementById("status-bar").textContent = `サブジャンル「${subGenre}」で抽出中...`;
+
+        try {
+            // Firestoreの array-contains を使用して、サブジャンル配列にその値が含まれるものを取得
+            const q = query(
+                collection(db, "books"), 
+                where("subGenres", "array-contains", subGenre), 
+                limit(100) // 絞り込みなので多めに取得
+            );
+            const snapshot = await getDocs(q);
+            
+            const books = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            currentBooks = books;
+            
+            renderRows(books);
+            
+            document.getElementById("status-bar").textContent = `サブジャンル「${subGenre}」: ${books.length}件ヒット`;
+            
+            // フィルタリング時は「さらに読み込む」を非表示にする（混乱を避けるため）
+            const loadBtn = document.querySelector("button[onclick='loadMore()']");
+            if(loadBtn) loadBtn.style.display = "none";
+
+        } catch (e) {
+            console.error(e);
+            alert("フィルタリング中にエラーが発生しました: " + e.message);
         }
     };
 
