@@ -105,7 +105,7 @@ const STUDY_HIERARCHY = {
 const SUBJECT_KEYWORDS = {
     univ_general: {
         career_up: ["TOEIC", "TOEFL", "IELTS", "英検", "大学英語","資格試験", "宅建", "簿記", "FP", "ITパスポート","公務員試験", "SPI", "就職活動", "適性検査", "資格"],
-        relearning: ["算数", "数学", "国語", "適性検査", "微分積分", "線形代数", "統計学", "大学数学"],
+        relearning: ["学び直し", "算数", "数学", "国語", "適性検査", "微分積分", "線形代数", "統計学", "大学数学"],
         liberal_arts: ["教養", "常識", "雑学"],
     },
     high_school: {
@@ -115,7 +115,7 @@ const SUBJECT_KEYWORDS = {
         math_ia: ["数学I" /*アルファベットのアイ*/, "数学Ⅰ" /*ローマ数字（1文字）*/, '数学A', "数Ⅰ", "数I", '数A', '数学1'],
         math_iib: ["数学II" /*アルファベットのアイ2つ*/, "数学Ⅱ" /*ローマ数字（1文字）*/, "数学B", "数Ⅱ", "数II", "数B", "数学2"],
         math_iiic: ["数学III" /*アルファベットのアイ3つ*/, "数学Ⅲ" /*ローマ数字（1文字）*/, "数学C", "数Ⅲ", "数III", "数C", "数学3"],
-        english: ["英語", "英単語", "英文法", "English", "NextStage", "Next Stage", "ネクステ", "Vintage", "ターゲット"],
+        english: ["英語", "英単語", "英文法", "English", "NextStage", "Next Stage", "ネクステ", "Vintage"],
         german: ["ドイツ語"],
         french: ["フランス語"],
         chinese: ["中国語"],
@@ -1342,7 +1342,7 @@ function analyzeBookStructure(info) {
   }
   
   if (main === "other") {
-    if (fullText.includes("絵本") || fullText.includes("童話") || fullText.includes("こども") || fullText.includes("図鑑") || fullText.includes("小学館")) {
+    if (fullText.includes("絵本") || fullText.includes("童話") || fullText.includes("こども") || fullText.includes("図鑑") || fullText.includes("小学館") || fullText.includes("キッズ") || fullText.includes("えほん")) {
         main = "children";
         targets.add("elementary"); 
     }
@@ -1412,8 +1412,8 @@ if (fullText.includes("語学") || fullText.includes("英語")) subs.add("langua
 if (fullText.includes("資格") || fullText.includes("検定")) subs.add("license");  
 
 // 児童書  
-if (fullText.includes("絵本")) subs.add("picturebook");
-if (fullText.includes("童話")) subs.add("fairytale");
+if (fullText.includes("絵本") || fullText.includes("えほん")) subs.add("picturebook");
+if (fullText.includes("童話") || fullText.includes("どうわ")) subs.add("fairytale");
 if (fullText.includes("ファンタジー")) subs.add("fantasy");
 if (fullText.includes("SF") || fullText.includes("エスエフ")) subs.add("sf");
 if (fullText.includes("ミステリー")) subs.add("mystery");  
@@ -1426,7 +1426,7 @@ if (fullText.includes("図鑑") || fullText.includes("ずかん")) subs.add("zuk
 
 // 学習参考書
 if (fullText.includes("確率") || fullText.includes("整数")) subs.add("math_ia");
-if (fullText.includes("ベクトル") || fullText.includes("漸化式")) subs.add("math_iib");
+if (fullText.includes("ベクトル") || fullText.includes("漸化式") || fullText.includes("数列")) subs.add("math_iib");
 
 // 何もヒットしなかった場合  
 if (subs.size === 0) subs.add("other");
