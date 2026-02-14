@@ -294,10 +294,11 @@
             <input type="text" id="edit-target">
         </div>
         <div class="form-group">            
-            <label style="color:#16a085;">サブジャンル (カンマ区切り, 例: mystery,history)</label>            
-            <input type="text" id="edit-subGenres" placeholder="fantasy, romance など">        
+            <label style="color:#16a085;">サブジャンル</label>            
+            <div id="edit-subGenres-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; background: #f9f9f9;">
+            </div>        
         </div>
-        <div class="form-group">    
+                <div class="form-group">    
             <label>出版年 (例: 2026, 2026-01-01)</label>    
             <input type="number" id="edit-publishedYear">
         </div>
@@ -600,6 +601,101 @@
     };
 
     // --- 編集機能 ---
+    // サブジャンルの定義リスト（判定ロジックと合わせる）
+    const SUBGENRE_OPTIONS = [
+        { id: "mystery", label: "ミステリー" }, 
+        { id: "fantasy", label: "ファンタジー" },
+        { id: "romance", label: "恋愛" }, 
+        { id: "sf", label: "SF" },
+        { id: "history", label: "歴史・時代" }, 
+        { id: "politics", label: "政治" }, 
+        { id: "horror", label: "ホラー" }, 
+        { id: "youth", label: "青春" },
+        { id: "human", label: "ヒューマンドラマ" }, 
+        { id: "lightnovel", label: "ラノベ" },
+        { id: "sensual", label: "官能" },
+
+        { id: "management", label: "経営" }, 
+        { id: "marketing", label: "マーケティング" },
+        { id: "leadership", label: "リーダーシップ" }, 
+        { id: "work", label: "仕事術" },
+        { id: "finance", label: "投資・金融" }, 
+        { id: "economy", label: "経済" },
+        { id: "industry", label: "業界研究" },
+        { id: "data", label: "データ・AI活用" }, 
+        { id: "career", label: "キャリア（転職・独立）" },
+
+        { id: "cooking", label: "料理" }, 
+        { id: "parenting", label: "育児" }, 
+        { id: "health", label: "健康" }, 
+        { id: "beauty", label: "美容" }, 
+        { id: "manners", label: "冠婚葬祭・マナー" }, 
+        { id: "travel", label: "旅行" },
+        { id: "gardening", label: "園芸" }, 
+        { id: "sports", label: "スポーツ" }, 
+        { id: "camera", label: "カメラ" }, 
+        { id: "railway", label: "鉄道" }, 
+        { id: "igo_shogi", label: "将棋・囲碁" },
+
+        { id: "humanities", label: "人文科学" }, 
+        { id: "social_science", label: "社会科学" },
+        { id: "science_tech", label: "理工学" }, 
+        { id: "medical", label: "医学・看護学" }, 
+        { id: "art", label: "芸術" }, 
+        { id: "language", label: "語学" }, 
+        { id: "license", label: "資格" },
+
+        { id: "picturebook", label: "絵本" }, 
+        { id: "fairytale", label: "童話" }, 
+        { id: "fantasy", label: "ファンタジー" }, 
+        { id: "sf", label: "SF" }, 
+        { id: "mystery", label: "ミステリー" }, 
+        { id: "history", label: "歴史" },
+        { id: "nonfiction", label: "ノンフィクション" }, 
+        { id: "poem", label: "詩" }, 
+        { id: "biography", label: "伝記" }, 
+        { id: "study_manga", label: "学習漫画" }, 
+        { id: "zukan", label: "図鑑" },
+
+        { id: "career_up", label: "キャリアアップ" },
+        { id: "relearning", label: "学び直し・基礎科目" }, 
+        { id: "liberal_arts", label: "教養・趣味" }, 
+
+        { id: "modern_japanese", label: "現代文" },
+        { id: "classic_japanese", label: "古文" }, 
+        { id: "chinese_classics", label: "漢文" }, 
+        { id: "math_ia", label: "数学IA" }, 
+        { id: "math_iib", label: "数学IIB" }, 
+        { id: "math_iiic", label: "数学IIIC" }, 
+        { id: "english", label: "英語" }, 
+        { id: "german", label: "ドイツ語" },
+        { id: "french", label: "フランス語" }, 
+        { id: "chinese", label: "中国語" }, 
+        { id: "korean", label: "韓国語" }, 
+        { id: "world_history", label: "世界史" }, 
+        { id: "japanese_history", label: "日本史" },
+        { id: "geography", label: "地理" }, 
+        { id: "ethics", label: "倫理" },
+        { id: "politics_economy", label: "政経" }, 
+        { id: "chemistry", label: "化学" }, 
+        { id: "physics", label: "物理" }, 
+        { id: "biology", label: "生物" }, 
+        { id: "earth_science", label: "地学" },
+        { id: "informatics", label: "情報" },
+
+        { id: "japanese_jh", label: "国語" }, 
+        { id: "math_jh", label: "数学" }, 
+        { id: "science_jh", label: "理科" }, 
+        { id: "social_jh", label: "社会" },
+        { id: "english_jh", label: "英語" },
+
+        { id: "japanese_elem", label: "国語" }, 
+        { id: "math_elem", label: "算数" }, 
+        { id: "science_elem", label: "理科" }, 
+        { id: "social_elem", label: "社会" },
+        { id: "english_elem", label: "英語" }
+    ];
+
     window.openEdit = (id) => {
         const book = currentBooks.find(b => b.id === id);
         if(!book) return;
@@ -609,10 +705,25 @@
         document.getElementById("edit-authors").value = book.authors ? book.authors.join(",") : "";
         document.getElementById("edit-genre").value = book.mainGenre || "other";
         document.getElementById("edit-target").value = book.target ? book.target.join(",") : "";
-        document.getElementById("edit-subGenres").value = (book.subGenres && Array.isArray(book.subGenres)) ? book.subGenres.join(",") : "";
         document.getElementById("edit-publishedYear").value = book.publishedYear || "";
         document.getElementById("edit-score").value = book.score || 0;
         document.getElementById("edit-image").value = book.image || "";
+
+        // --- サブジャンル・チェックボックスの生成 ---
+        const container = document.getElementById("edit-subGenres-container");
+        container.innerHTML = ""; // クリア
+        
+        const currentSubs = book.subGenres || [];
+
+        SUBGENRE_OPTIONS.forEach(opt => {
+            const isChecked = currentSubs.includes(opt.id) ? "checked" : "";
+            container.innerHTML += `
+                <label style="font-weight:normal; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                    <input type="checkbox" name="subgenre-check" value="${opt.id}" ${isChecked}>
+                    ${opt.label}
+                </label>
+            `;
+        });
 
         document.getElementById("edit-modal").style.display = "block";
     };
@@ -624,14 +735,18 @@
     window.saveBook = async () => {
         const id = document.getElementById("edit-id").value;
         const targetStr = document.getElementById("edit-target").value;
-        const subGenresStr = document.getElementById("edit-subGenres").value;
+        
+        // --- チェックボックスから値を取得 ---
+        const checkedBoxes = document.querySelectorAll('input[name="subgenre-check"]:checked');
+        const selectedSubGenres = Array.from(checkedBoxes).map(cb => cb.value);
         
         const newData = {
             title: document.getElementById("edit-title").value,
             authors: document.getElementById("edit-authors").value.split(",").map(s=>s.trim()),
             mainGenre: document.getElementById("edit-genre").value,
             target: targetStr ? targetStr.split(",").map(s=>s.trim()) : [],
-            subGenres: subGenresStr ? subGenresStr.split(",").map(s=>s.trim()).filter(Boolean) : [],
+            // 配列としてそのまま保存
+            subGenres: selectedSubGenres, 
             publishedYear: parseInt(document.getElementById("edit-publishedYear").value, 10) || null,
             score: parseInt(document.getElementById("edit-score").value, 10),
             image: getSecureImageUrl(document.getElementById("edit-image").value)
