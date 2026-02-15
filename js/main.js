@@ -1389,7 +1389,7 @@ function analyzeBookStructure(info) {
 // 文芸  
 if (fullText.includes("ミステリー") || fullText.includes("推理") || fullText.includes("探偵")) subs.add("mystery");  
 if (fullText.includes("ファンタジー")) subs.add("fantasy");  
-if (fullText.includes("恋愛") || fullText.includes("ラブコメ") || fullText.includes("恋")) subs.add("romance");  
+if (fullText.includes("恋愛") || fullText.includes("ラブ") || fullText.includes("恋")) subs.add("romance");  
 if (fullText.includes("sf") || fullText.includes("空想科学") || fullText.includes("サイエンスフィクション")) subs.add("sf");  
 if (fullText.includes("歴史") || fullText.includes("時代") || fullText.includes("三国志") || fullText.includes("戦争") || fullText.includes("戦闘機")) subs.add("history");  
 if (fullText.includes("政治")) subs.add("politics");  
