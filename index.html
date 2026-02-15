@@ -31,20 +31,6 @@
     </header>
         
     <main>
-        <div style="text-align: right; margin-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 15px;">
-            
-            <!-- 1. ランキングの仕組み（左側に配置） -->
-            <button id="rankingRuleBtn" class="action-btn">
-                <span style="margin-right: 6px;">ℹ️</span> ランキングについて
-            </button>
-
-            <!-- 2. お問い合わせ（右側に配置） -->
-            <a href="contact.html" class="action-btn">
-                <span style="margin-right: 6px;">📩</span> お問い合わせ
-            </a>
-
-        </div>
-
         <!-- ▼▼▼ おすすめ本エリア（ここに追加） ▼▼▼ -->
         <div id="featured-section"></div>
     
@@ -494,6 +480,57 @@
     </div>
 </div>
 
+<!-- ▼ 免責事項モーダル ▼ -->
+<div id="disclaimer-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="close-disclaimer">&times;</span>
+        <h2 style="border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px;">
+            ⚖️ 免責事項
+        </h2>
+        
+        <div style="font-size: 0.9rem; line-height: 1.8; color: #444;">
+            <section style="margin-bottom: 20px;">
+                <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">1. 情報の正確性について</h3>
+                <p>当サイト「BOOK REE」で提供される情報の正確性については、その内容を保証するものではありません。情報の利用によって生じた不利益や損害について、当サイトは一切の責任を負いかねます。</p>
+            </section>
+
+            <section style="margin-bottom: 20px;">
+                <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">2. 書籍情報および画像について</h3>
+                <p>当サイトに掲載されている書籍の書影（画像）、タイトル、著者名などの情報は、<strong>Google Books API</strong> を通じて取得しています。これらの情報の著作権は、各出版社、著者、または Google 等の権利者に帰属します。</p>
+            </section>
+
+            <section style="margin-bottom: 20px;">
+                <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">3. Amazonアソシエイトについて</h3>
+                <p>BOOK REEは、Amazon.co.jpを宣伝しリンクすることによって紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。Amazonのアソシエイトとして、当メディアは適格販売により収入を得ています。</p>
+            </section>
+
+            <section style="margin-bottom: 20px;">                
+                <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">4. 外部リンクについて</h3>                
+                <p>当サイトからリンクやバナーなどによって他のサイトに移動された場合、移動先サイトで提供される情報、サービス等について一切の責任を負いません。</p>            
+            </section>
+
+            <!-- 5. 著作権について -->
+            <section style="margin-bottom: 20px;">
+                <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">5. 著作権について</h3>
+                <p>当サイト「BOOK REE」に掲載されている独自のコンテンツ（ロゴ、デザイン、文章、およびランキングの集計データ等）の著作権は、当サイト管理者に帰属します。これらの無断転載・複製を固く禁じます。</p>
+            </section>
+
+            <!-- 6. サービスの停止・変更について -->
+            <section style="margin-bottom: 20px;">
+                <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">6. サービスの停止・変更について</h3>
+                <p>当サイトは、予告なしに内容の変更、削除、または運営の中断・中止を行うことがあります。これらによって生じた損害について、当サイトは一切の責任を負いません。</p>
+            </section>
+
+            <!-- 7. アクセス解析とクッキーについて -->
+            <section style="margin-bottom: 20px;">
+                <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">7. アクセス解析について</h3>
+                <p>当サイトでは、利用状況の把握とサービス向上を目的として、Firebase等のツールを用いたアクセス解析を行っています。データは匿名で収集されており、個人を特定するものではありません。</p>
+            </section>
+
+        </div>
+    </div>
+</div>
+
 <!-- 
     ▼▼▼ 追加：統計データ計測用スクリプト ▼▼▼
     【重要】必ずご自身のFirebase Configを下記に貼り付けてください。
@@ -599,6 +636,24 @@
         console.warn("[Stats] Firebase Config not found. Statistics are disabled.");
     }
 </script>
+
+<footer class="site-footer">
+    <div class="footer-content">
+        <div class="footer-buttons">
+            <button id="rankingRuleBtnFooter" class="action-btn">
+                <span style="margin-right: 6px;">ℹ️</span> ランキングについて
+            </button>
+            <a href="contact.html" class="action-btn">
+                <span style="margin-right: 6px;">📩</span> お問い合わせ
+            </a>
+            <button id="disclaimerBtn" class="action-btn">
+                <span style="margin-right: 6px;">⚖️</span> 免責事項
+            </button>
+        </div>
+        <p class="footer-attribution">Data & Images by Google Books API</p>
+        <p class="copyright">&copy; 2026 BOOK REE</p>
+    </div>
+</footer>
 
 </body>
 </html>

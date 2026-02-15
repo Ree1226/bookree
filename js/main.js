@@ -1212,23 +1212,44 @@ async function voteForNewBook(book, points, cardElement) {
 }
   
 function initModal() {
-  const modal = document.getElementById("ranking-modal"); 
-  const btn = document.getElementById("rankingRuleBtn");
-  const span = document.getElementById("close-modal");
+    // --- 1. ランキングの仕組みモーダル ---
+    const rankingModal = document.getElementById("ranking-modal"); 
+    // フッターに移動した新しいボタンIDを指定
+    const rankingBtn = document.getElementById("rankingRuleBtnFooter");
+    const rankingClose = document.getElementById("close-modal");
 
-  if (modal && btn && span) {
-      btn.onclick = () => {
-          modal.style.display = "block";
-      };
-      span.onclick = () => {
-          modal.style.display = "none";
-      };
-      window.onclick = (e) => {
-          if (e.target == modal) {
-              modal.style.display = "none";
-          }
-      };
-  }
+    if (rankingModal && rankingBtn && rankingClose) {
+        rankingBtn.onclick = () => {
+            rankingModal.style.display = "block";
+        };
+        rankingClose.onclick = () => {
+            rankingModal.style.display = "none";
+        };
+    }
+
+    // --- 2. 免責事項モーダル (追加) ---
+    const disclaimerModal = document.getElementById("disclaimer-modal");
+    const disclaimerBtn = document.getElementById("disclaimerBtn");
+    const disclaimerClose = document.getElementById("close-disclaimer");
+
+    if (disclaimerModal && disclaimerBtn && disclaimerClose) {
+        disclaimerBtn.onclick = () => {
+            disclaimerModal.style.display = "block";
+        };
+        disclaimerClose.onclick = () => {
+            disclaimerModal.style.display = "none";
+        };
+    }
+
+    // --- 3. 共通：背景クリックで閉じる ---
+    window.onclick = (e) => {
+        if (e.target == rankingModal) {
+            rankingModal.style.display = "none";
+        }
+        if (e.target == disclaimerModal) {
+            disclaimerModal.style.display = "none";
+        }
+    };
 }
 
 function analyzeBookStructure(info) {
