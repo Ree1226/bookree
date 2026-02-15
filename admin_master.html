@@ -290,15 +290,34 @@
             </select>
         </div>
         <div class="form-group">
-            <label>ターゲット (カンマ区切り, 例: high_school,general)</label>
-            <input type="text" id="edit-target">
+            <label>ターゲット</label>
+            <div id="edit-target-container" style="
+                display: flex; 
+                gap: 15px; 
+                flex-wrap: wrap; 
+                border: 1px solid #ddd; 
+                padding: 10px; 
+                border-radius: 4px; 
+                background: #fff;
+                ">
+            </div>
         </div>
         <div class="form-group">            
             <label style="color:#16a085;">サブジャンル</label>            
-            <div id="edit-subGenres-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #ddd; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; background: #f9f9f9;">
-            </div>        
+            <div id="edit-subGenres-container" style="        
+                display: grid;
+                 grid-template-columns: repeat(3, 1fr); /* 3列に整列 */        
+                 gap: 12px 8px; /* 縦・横の隙間を調整 */        
+                 border: 1px solid #ddd;         
+                 padding: 15px;         
+                 border-radius: 4px;         
+                 max-height: 250px;         
+                 overflow-y: auto;         
+                 background: #fff; /* 背景を白にして見やすく */    
+            ">        <!-- JSで生成 -->    
+            </div>         
         </div>
-                <div class="form-group">    
+        <div class="form-group">    
             <label>出版年 (例: 2026, 2026-01-01)</label>    
             <input type="number" id="edit-publishedYear">
         </div>
@@ -601,129 +620,185 @@
     };
 
     // --- 編集機能 ---
-    // サブジャンルの定義リスト（判定ロジックと合わせる）
-    const SUBGENRE_OPTIONS = [
-        { id: "mystery", label: "ミステリー" }, 
-        { id: "fantasy", label: "ファンタジー" },
-        { id: "romance", label: "恋愛" }, 
-        { id: "sf", label: "SF" },
-        { id: "history", label: "歴史・時代" }, 
-        { id: "politics", label: "政治" }, 
-        { id: "horror", label: "ホラー" }, 
-        { id: "youth", label: "青春" },
-        { id: "human", label: "ヒューマンドラマ" }, 
-        { id: "lightnovel", label: "ラノベ" },
-        { id: "sensual", label: "官能" },
-
-        { id: "management", label: "経営" }, 
-        { id: "marketing", label: "マーケティング" },
-        { id: "leadership", label: "リーダーシップ" }, 
-        { id: "work", label: "仕事術" },
-        { id: "finance", label: "投資・金融" }, 
-        { id: "economy", label: "経済" },
-        { id: "industry", label: "業界研究" },
-        { id: "data", label: "データ・AI活用" }, 
-        { id: "career", label: "キャリア（転職・独立）" },
-
-        { id: "cooking", label: "料理" }, 
-        { id: "parenting", label: "育児" }, 
-        { id: "health", label: "健康" }, 
-        { id: "beauty", label: "美容" }, 
-        { id: "manners", label: "冠婚葬祭・マナー" }, 
-        { id: "travel", label: "旅行" },
-        { id: "gardening", label: "園芸" }, 
-        { id: "sports", label: "スポーツ" }, 
-        { id: "camera", label: "カメラ" }, 
-        { id: "railway", label: "鉄道" }, 
-        { id: "igo_shogi", label: "将棋・囲碁" },
-
-        { id: "humanities", label: "人文科学" }, 
-        { id: "social_science", label: "社会科学" },
-        { id: "science_tech", label: "理工学" }, 
-        { id: "medical", label: "医学・看護学" }, 
-        { id: "art", label: "芸術" }, 
-        { id: "language", label: "語学" }, 
-        { id: "license", label: "資格" },
-
-        { id: "picturebook", label: "絵本" }, 
-        { id: "fairytale", label: "童話" }, 
-        { id: "fantasy", label: "ファンタジー" }, 
-        { id: "sf", label: "SF" }, 
-        { id: "mystery", label: "ミステリー" }, 
-        { id: "history", label: "歴史" },
-        { id: "nonfiction", label: "ノンフィクション" }, 
-        { id: "poem", label: "詩" }, 
-        { id: "biography", label: "伝記" }, 
-        { id: "study_manga", label: "学習漫画" }, 
-        { id: "zukan", label: "図鑑" },
-
-        { id: "career_up", label: "キャリアアップ" },
-        { id: "relearning", label: "学び直し・基礎科目" }, 
-        { id: "liberal_arts", label: "教養・趣味" }, 
-
-        { id: "modern_japanese", label: "現代文" },
-        { id: "classic_japanese", label: "古文" }, 
-        { id: "chinese_classics", label: "漢文" }, 
-        { id: "math_ia", label: "数学IA" }, 
-        { id: "math_iib", label: "数学IIB" }, 
-        { id: "math_iiic", label: "数学IIIC" }, 
-        { id: "english", label: "英語" }, 
-        { id: "german", label: "ドイツ語" },
-        { id: "french", label: "フランス語" }, 
-        { id: "chinese", label: "中国語" }, 
-        { id: "korean", label: "韓国語" }, 
-        { id: "world_history", label: "世界史" }, 
-        { id: "japanese_history", label: "日本史" },
-        { id: "geography", label: "地理" }, 
-        { id: "ethics", label: "倫理" },
-        { id: "politics_economy", label: "政経" }, 
-        { id: "chemistry", label: "化学" }, 
-        { id: "physics", label: "物理" }, 
-        { id: "biology", label: "生物" }, 
-        { id: "earth_science", label: "地学" },
-        { id: "informatics", label: "情報" },
-
-        { id: "japanese_jh", label: "国語" }, 
-        { id: "math_jh", label: "数学" }, 
-        { id: "science_jh", label: "理科" }, 
-        { id: "social_jh", label: "社会" },
-        { id: "english_jh", label: "英語" },
-
-        { id: "japanese_elem", label: "国語" }, 
-        { id: "math_elem", label: "算数" }, 
-        { id: "science_elem", label: "理科" }, 
-        { id: "social_elem", label: "社会" },
-        { id: "english_elem", label: "英語" }
+    const TARGET_OPTIONS = [
+    { id: "infant", label: "幼児" },
+    { id: "elementary", label: "小学生" },
+    { id: "junior_high", label: "中学生" },
+    { id: "high_school", label: "高校生" },
+    { id: "univ_general", label: "大学生・一般" }
     ];
+
+    // サブジャンルの定義リスト（判定ロジックと合わせる）
+    const SUBGENRE_MASTER = {
+        // 文芸
+        literature: [
+            { id: "mystery", label: "ミステリー" }, { id: "fantasy", label: "ファンタジー" },
+            { id: "romance", label: "恋愛" }, { id: "sf", label: "SF" },
+            { id: "history", label: "歴史・時代" }, { id: "politics", label: "政治" },
+            { id: "horror", label: "ホラー" }, { id: "youth", label: "青春" },
+            { id: "human", label: "ヒューマンドラマ" }, { id: "lightnovel", label: "ラノベ" },
+            { id: "sensual", label: "官能" }, { id: "other", label: "その他" }
+        ],
+        // ビジネス
+        business: [
+            { id: "management", label: "経営" }, { id: "marketing", label: "マーケティング" },
+            { id: "leadership", label: "リーダーシップ" }, { id: "work", label: "仕事術" },
+            { id: "finance", label: "投資・金融" }, { id: "economy", label: "経済" },
+            { id: "industry", label: "業界研究" }, { id: "data", label: "データ・AI活用" },
+            { id: "career", label: "キャリア（転職・独立）" }, { id: "other", label: "その他" }
+        ],
+        // 実用・ホビー
+        hobby: [
+            { id: "cooking", label: "料理" }, { id: "parenting", label: "育児" },
+            { id: "health", label: "健康" }, { id: "beauty", label: "美容" },
+            { id: "manners", label: "冠婚葬祭・マナー" }, { id: "travel", label: "旅行" },
+            { id: "gardening", label: "園芸" }, { id: "sports", label: "スポーツ" },
+            { id: "camera", label: "カメラ" }, { id: "railway", label: "鉄道" },
+            { id: "igo_shogi", label: "将棋・囲碁" }, { id: "other", label: "その他" }
+        ],
+        // 専門書
+        specialized: [
+            { id: "humanities", label: "人文科学" }, { id: "social_science", label: "社会科学" },
+            { id: "science_tech", label: "理工学" }, { id: "medical", label: "医学・看護学" },
+            { id: "art", label: "芸術" }, { id: "language", label: "語学" },
+            { id: "license", label: "資格" }, { id: "other", label: "その他" }
+        ],
+        // 児童書
+        children: [
+            { id: "picturebook", label: "絵本" }, { id: "fairytale", label: "童話" },
+            { id: "fantasy", label: "ファンタジー" }, { id: "sf", label: "SF" },
+            { id: "mystery", label: "ミステリー" }, { id: "history", label: "歴史" },
+            { id: "nonfiction", label: "ノンフィクション" }, { id: "poem", label: "詩" },
+            { id: "biography", label: "伝記" }, { id: "study_manga", label: "学習漫画" },
+            { id: "zukan", label: "図鑑" }, { id: "other", label: "その他" }
+        ],
+        // 一般学習・教養
+        study: [
+            { id: "career_up", label: "キャリアアップ" },
+            { id: "relearning", label: "学び直し・基礎科目" },
+            { id: "liberal_arts", label: "教養・趣味" }, { id: "other", label: "その他" }
+        ],
+        // 高校生・大学受験
+        highschool: [
+            { id: "modern_japanese", label: "現代文" }, { id: "classic_japanese", label: "古文" },
+            { id: "chinese_classics", label: "漢文" }, { id: "math_ia", label: "数学IA" },
+            { id: "math_iib", label: "数学IIB" }, { id: "math_iiic", label: "数学IIIC" },
+            { id: "english", label: "英語" }, { id: "german", label: "ドイツ語" },
+            { id: "french", label: "フランス語" }, { id: "chinese", label: "中国語" },
+            { id: "korean", label: "韓国語" }, { id: "world_history", label: "世界史" },
+            { id: "japanese_history", label: "日本史" }, { id: "geography", label: "地理" },
+            { id: "ethics", label: "倫理" }, { id: "politics_economy", label: "政経" },
+            { id: "chemistry", label: "化学" }, { id: "physics", label: "物理" },
+            { id: "biology", label: "生物" }, { id: "earth_science", label: "地学" },
+            { id: "informatics", label: "情報" }, { id: "other", label: "その他" }
+        ],
+        // 中学生
+        juniorhigh: [
+            { id: "japanese_jh", label: "国語" }, { id: "math_jh", label: "数学" },
+            { id: "science_jh", label: "理科" }, { id: "social_jh", label: "社会" },
+            { id: "english_jh", label: "英語" }, { id: "other", label: "その他" }
+        ],
+        // 小学生
+        elementary: [
+            { id: "japanese_elem", label: "国語" }, { id: "math_elem", label: "算数" },
+            { id: "science_elem", label: "理科" }, { id: "social_elem", label: "社会" },
+            { id: "english_elem", label: "英語" }, { id: "other", label: "その他" }
+        ],
+        // その他
+        other: [
+            { id: "other", label: "その他" }
+        ]
+    };
+
+    // サブジャンルのチェックボックスを再描画する関数
+    function updateSubGenreCheckboxes(mainGenre, targetArray = [], currentSubs = []) {
+        const container = document.getElementById("edit-subGenres-container");
+        container.innerHTML = "";
+        
+        // 基本的には大ジャンル名をキーにする
+        let genreKey = mainGenre;
+
+        // 大ジャンルが「学習参考書(study)」の場合のみ、ターゲットに応じてキーを切り替える
+        if (mainGenre === 'study') {
+            if (targetArray.includes('high_school')) {
+                genreKey = 'highschool';
+            } else if (targetArray.includes('junior_high')) {
+                genreKey = 'juniorhigh';
+            } else if (targetArray.includes('elementary')) {
+                genreKey = 'elementary';
+            } else {
+                // 幼児(infant)、大学生・一般(univ_general)、または未選択の場合
+                genreKey = 'study'; 
+            }
+        }
+
+        // マスターデータから該当するリストを取得（存在しない場合は other）
+        const options = SUBGENRE_MASTER[genreKey] || SUBGENRE_MASTER.other;
+
+        // チェックボックスの描画
+        options.forEach(opt => {
+            const isChecked = currentSubs.includes(opt.id) ? "checked" : "";
+            const itemHtml = `
+                <label style="font-weight:normal; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap;">
+                    <input type="checkbox" name="subgenre-check" value="${opt.id}" ${isChecked} style="margin:0; width:16px; height:16px;">
+                    <span>${opt.label}</span>
+                </label>
+            `;
+            container.insertAdjacentHTML('beforeend', itemHtml);
+        });
+    }
 
     window.openEdit = (id) => {
         const book = currentBooks.find(b => b.id === id);
-        if(!book) return;
+        if (!book) return;
 
+        // 基本フィールドのセット
         document.getElementById("edit-id").value = book.id;
         document.getElementById("edit-title").value = book.title;
         document.getElementById("edit-authors").value = book.authors ? book.authors.join(",") : "";
-        document.getElementById("edit-genre").value = book.mainGenre || "other";
-        document.getElementById("edit-target").value = book.target ? book.target.join(",") : "";
         document.getElementById("edit-publishedYear").value = book.publishedYear || "";
         document.getElementById("edit-score").value = book.score || 0;
         document.getElementById("edit-image").value = book.image || "";
 
-        // --- サブジャンル・チェックボックスの生成 ---
-        const container = document.getElementById("edit-subGenres-container");
-        container.innerHTML = ""; // クリア
-        
-        const currentSubs = book.subGenres || [];
+        const genreSelect = document.getElementById("edit-genre");
+        genreSelect.value = book.mainGenre || "other";
 
-        SUBGENRE_OPTIONS.forEach(opt => {
-            const isChecked = currentSubs.includes(opt.id) ? "checked" : "";
-            container.innerHTML += `
-                <label style="font-weight:normal; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:5px;">
-                    <input type="checkbox" name="subgenre-check" value="${opt.id}" ${isChecked}>
-                    ${opt.label}
+        // --- ターゲット項目のレイアウト調整 ---
+        const targetLabel = document.querySelector('label[for="edit-target"]');
+        if (targetLabel) targetLabel.innerText = "ターゲット"; // 説明文をシンプルに更新
+
+        const targetContainer = document.getElementById("edit-target-container");
+        // サブジャンルと同様のグリッドスタイルを適用
+        targetContainer.style.display = "grid";
+        targetContainer.style.gridTemplateColumns = "repeat(3, 1fr)";
+        targetContainer.style.gap = "10px 5px";
+        targetContainer.style.padding = "12px";
+        targetContainer.style.border = "1px solid #eee";
+        targetContainer.style.borderRadius = "5px";
+        targetContainer.style.backgroundColor = "#fafafa";
+        targetContainer.style.marginBottom = "15px";
+
+        targetContainer.innerHTML = "";
+        const currentTargets = Array.isArray(book.target) ? book.target : (book.target ? [book.target] : []);
+
+        TARGET_OPTIONS.forEach(opt => {
+            const isChecked = currentTargets.includes(opt.id) ? "checked" : "";
+            const itemHtml = `
+                <label style="font-weight:normal; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; margin:0;">
+                    <input type="checkbox" name="target-check" value="${opt.id}" ${isChecked} onchange="onTargetChange()" style="margin:0; width:16px; height:16px;">
+                    <span>${opt.label}</span>
                 </label>
             `;
+            targetContainer.insertAdjacentHTML('beforeend', itemHtml);
         });
+
+        // サブジャンルの初期描画
+        updateSubGenreCheckboxes(genreSelect.value, currentTargets, book.subGenres || []);
+
+        genreSelect.onchange = () => {
+            const selectedTargets = Array.from(document.querySelectorAll('input[name="target-check"]:checked')).map(cb => cb.value);
+            updateSubGenreCheckboxes(genreSelect.value, selectedTargets, []);
+        };
 
         document.getElementById("edit-modal").style.display = "block";
     };
@@ -732,21 +807,35 @@
         document.getElementById("edit-modal").style.display = "none";
     };
 
+    // 1. ターゲット変更時の関数をグローバルに定義
+    window.onTargetChange = () => {
+        const mainGenre = document.getElementById("edit-genre").value;
+        // チェックされているターゲットを取得
+        const selectedTargets = Array.from(document.querySelectorAll('input[name="target-check"]:checked')).map(cb => cb.value);
+        // 現在チェックされているサブジャンルを取得（表示切り替え時に選択を維持するため）
+        const currentSubs = Array.from(document.querySelectorAll('input[name="subgenre-check"]:checked')).map(cb => cb.value);
+        
+        // サブジャンルの表示を更新
+        updateSubGenreCheckboxes(mainGenre, selectedTargets, currentSubs);
+    };
+
     window.saveBook = async () => {
         const id = document.getElementById("edit-id").value;
-        const targetStr = document.getElementById("edit-target").value;
         
-        // --- チェックボックスから値を取得 ---
-        const checkedBoxes = document.querySelectorAll('input[name="subgenre-check"]:checked');
-        const selectedSubGenres = Array.from(checkedBoxes).map(cb => cb.value);
+        // --- 修正ポイント: ターゲットのチェックボックスから値を取得 ---
+        const checkedTargets = document.querySelectorAll('input[name="target-check"]:checked');
+        const selectedTargets = Array.from(checkedTargets).map(cb => cb.value);
+        
+        // --- 修正ポイント: サブジャンルのチェックボックスから値を取得 ---
+        const checkedSubGenres = document.querySelectorAll('input[name="subgenre-check"]:checked');
+        const selectedSubGenres = Array.from(checkedSubGenres).map(cb => cb.value);
         
         const newData = {
             title: document.getElementById("edit-title").value,
             authors: document.getElementById("edit-authors").value.split(",").map(s=>s.trim()),
             mainGenre: document.getElementById("edit-genre").value,
-            target: targetStr ? targetStr.split(",").map(s=>s.trim()) : [],
-            // 配列としてそのまま保存
-            subGenres: selectedSubGenres, 
+            target: selectedTargets,      // 配列として格納
+            subGenres: selectedSubGenres, // 配列として格納
             publishedYear: parseInt(document.getElementById("edit-publishedYear").value, 10) || null,
             score: parseInt(document.getElementById("edit-score").value, 10),
             image: getSecureImageUrl(document.getElementById("edit-image").value)
@@ -754,14 +843,16 @@
 
         if(confirm("変更を保存しますか？")) {
             try {
+                // Firestoreのドキュメントを更新
                 await updateDoc(doc(db, "books", id), newData);
                 
                 const bookIndex = currentBooks.findIndex(b => b.id === id);
                 if(bookIndex > -1) {
+                    // ローカルのデータを更新
                     currentBooks[bookIndex] = { ...currentBooks[bookIndex], ...newData };
                     const b = currentBooks[bookIndex];
 
-                    // --- 修正ポイント1: 日付文字列の生成 ---
+                    // --- 修正ポイント1: 日付文字列の生成（既存機能を維持） ---
                     let dateStr = "未登録";
                     if (b.createdAt && typeof b.createdAt.toDate === 'function') {    
                         const d = b.createdAt.toDate();    
@@ -772,17 +863,19 @@
                     if(tr) {
                         let img = getSecureImageUrl(b.image) || "https://via.placeholder.com/40x50?text=No";
                         
+                        // ターゲットのバッジ生成
                         let targetBadges = "";
                         if(b.target && Array.isArray(b.target)) {
                             targetBadges = b.target.map(t => `<span class="badge bg-target">${t}</span>`).join("");
                         }
 
+                        // サブジャンルのバッジ生成
                         let subBadges = "";
                         if(b.subGenres && Array.isArray(b.subGenres)) {
                             subBadges = b.subGenres.map(s => `<span class="badge bg-sub">${s}</span>`).join("");
                         }
 
-                        // --- 修正ポイント2: innerHTML に「登録日」の列を追加 ---
+                        // --- 修正ポイント2: innerHTML の更新（既存の列構成を維持） ---
                         tr.innerHTML = `
                             <td><img src="${img}" class="thumb"></td>
                             <td>
@@ -795,7 +888,6 @@
                                 ${targetBadges}
                                 ${subBadges}
                             </td>
-                            <!-- ★ここに登録日の列を追加 -->
                             <td style="font-size:12px; color:#666;">${dateStr}</td>
                             <td style="font-size:13px; color:#555;">${b.publishedYear || "-"}</td>
                             <td style="font-weight:bold; color:#e67e22;">★ ${b.score || 0}</td>
@@ -819,7 +911,7 @@
                 }
 
                 alert("保存しました");
-                closeModal();
+                closeModal(); // モーダルを閉じる
 
             } catch(e) {
                 console.error(e);
