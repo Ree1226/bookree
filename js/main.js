@@ -1174,14 +1174,12 @@ async function voteForNewBook(book, points, cardElement) {
   
     localStorage.setItem(storageKey, "true");
 
-    // ▼▼▼ シェア用URLの作成 ▼▼▼
     const shareText = `『${title}』を見つけて投票しました！ (+${points}点)\nみんなのおすすめ本ランキング #BookRee`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
 
     const ratingArea = cardElement.querySelector(".rating-area");
     if (ratingArea) {
         const msg = isBonus ? `Thanks! (+${weightedPoints}) 🏆` : `Thanks! (+${rawPoints})`;
-        // ▼▼▼ 修正: こちらもシェアボタンを追加 ▼▼▼
         ratingArea.innerHTML = `
             <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 0;">
                 <span style="color:#e67e22; font-weight:bold;">${msg}</span>
@@ -1264,22 +1262,47 @@ async function voteForNewBook(book, points, cardElement) {
             lastUpdated: serverTimestamp()
         };
   
-        // --- 追加：詳細な科目判定 ---
+        // --- 詳細な科目判定 ---
         let finalSubGenres = struct.subGenres;
         if (finalGenre === 'study') {
             let allDetected = [];
             for (const t of finalTarget) {
                 const detected = detectSubGenre(title, info.description || "", t);
                 if (detected.length > 0) {
-                    // 見つかった科目をすべて追加
                     allDetected = [...allDetected, ...detected];
                 }
             }
-            // 重複を排除して最終的なサブジャンルにする
             if (allDetected.length > 0) {
                 finalSubGenres = [...new Set(allDetected)];
             }
         }
+
+        // ★★★ ここから追加：最終的なメインジャンルの補完ロジック ★★★
+        // OpenBDの結果などで finalGenre が 'other' や 'general' になってしまった場合、
+        // サブジャンルからメインジャンルを逆引きして上書きする
+        if (finalGenre === 'other' || finalGenre === 'general' || !finalGenre) {
+            if (finalSubGenres && finalSubGenres.length > 0) {
+                const counts = {};
+                finalSubGenres.forEach(s => {
+                    const m = SUB_TO_MAIN_MAP[s];
+                    if (m) counts[m] = (counts[m] || 0) + 1;
+                });
+
+                const candidates = Object.keys(counts);
+                if (candidates.length > 0) {
+                    candidates.sort((a, b) => {
+                        // 1. 出現回数が多い順
+                        if (counts[b] !== counts[a]) return counts[b] - counts[a];
+                        // 2. 回数が同じなら優先度順
+                        return MAIN_GENRE_PRIORITY.indexOf(a) - MAIN_GENRE_PRIORITY.indexOf(b);
+                    });
+                    finalGenre = candidates[0]; // 最も適切なメインジャンルをセット
+                }
+            }
+        }
+        // 最終防衛線
+        if (!finalGenre) finalGenre = 'other';
+        // ★★★ ここまで追加 ★★★
 
         if (!isMerge) {
             Object.assign(updateData, {
@@ -1304,7 +1327,7 @@ async function voteForNewBook(book, points, cardElement) {
         }
   
         await setDoc(docRef, updateData, { merge: true });
-        console.log(`投票完了: ${title}`);
+        console.log(`投票完了: ${title} (Genre: ${finalGenre})`);
   
         if (window.logGenreVote && finalGenre) {
             window.logGenreVote(finalGenre);
