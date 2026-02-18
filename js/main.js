@@ -1360,6 +1360,49 @@ function initModal() {
     };
 }
 
+// --- 追加：サブジャンルからメインジャンルを特定するための逆引きマップ ---
+const SUB_TO_MAIN_MAP = {
+    // 文芸 (literature)
+    "mystery": "literature", "fantasy": "literature", "romance": "literature", "sf": "literature",
+    "history": "literature", "politics": "literature", "horror": "literature", "youth": "literature",
+    "human": "literature", "lightnovel": "literature", "sensual": "literature", "manga": "literature",
+
+    // ビジネス (business)
+    "management": "business", "marketing": "business", "leadership": "business", "work": "business",
+    "finance": "business", "economy": "business", "industry": "business", "data": "business", "career": "business",
+
+    // 趣味・実用 (hobby)
+    "cooking": "hobby", "parenting": "hobby", "health": "hobby", "beauty": "hobby", "manners": "hobby",
+    "travel": "hobby", "gardening": "hobby", "sports": "hobby", "camera": "hobby", "railway": "hobby", "igo_shogi": "hobby",
+
+    // 専門書 (specialized)
+    "humanities": "specialized", "social_science": "specialized", "science_tech": "specialized",
+    "medical": "specialized", "art": "specialized", "language": "specialized", "license": "specialized",
+
+    // 児童書 (children)
+    "picturebook": "children", "fairytale": "children", "nonfiction": "children", "biography": "children",
+    "poem": "children", "study_manga": "children", "zukan": "children",
+
+    // 学習参考書 (study)
+    // 高校生
+    "modern_japanese": "study", "classic_japanese": "study", "chinese_classics": "study",
+    "math_ia": "study", "math_iib": "study", "math_iiic": "study",
+    "english": "study", "german": "study", "french": "study", "chinese": "study", "korean": "study",
+    "world_history": "study", "japanese_history": "study", "geography": "study",
+    "ethics": "study", "politics_economy": "study",
+    "chemistry": "study", "physics": "study", "biology": "study", "earth_science": "study",
+    "informatics": "study",
+    // 大学生・一般
+    "career_up": "study", "relearning": "study", "liberal_arts": "study",
+    // 中学生
+    "japanese_jh": "study", "math_jh": "study", "science_jh": "study", "social_jh": "study", "english_jh": "study",
+    // 小学生
+    "japanese_elem": "study", "math_elem": "study", "science_elem": "study", "social_elem": "study", "english_elem": "study"
+};
+
+// --- 追加：メインジャンルの優先度（カウントが同数の場合の決選投票用） ---
+const MAIN_GENRE_PRIORITY = ['literature', 'business', 'specialized', 'hobby', 'children', 'study'];
+
 function analyzeBookStructure(info) {
     const API_SUBGENRE_MAP = {
         // ■ 文芸 (Literature)
@@ -1372,7 +1415,7 @@ function analyzeBookStructure(info) {
         "horror": "horror",
         "juvenile fiction": "youth", // 青春・ヤングアダルト
         "drama": "human", // ヒューマンドラマ
-    
+
         // ■ ビジネス (Business)
         "business": "management", "management": "management",
         "marketing": "marketing", "advertising": "marketing",
@@ -1382,7 +1425,7 @@ function analyzeBookStructure(info) {
         "economics": "economy",
         "industries": "industry",
         "computers": "data", "data": "data",
-    
+
         // ■ 趣味・実用 (Hobby)
         "cooking": "cooking", "housekeeping": "cooking",
         "family & relationships": "parenting", "parenting": "parenting",
@@ -1394,7 +1437,7 @@ function analyzeBookStructure(info) {
         "photography": "camera",
         "transportation": "railway", // 鉄道など
         "games & activities": "igo_shogi", // 将棋・囲碁など
-    
+
         // ■ 専門書 (Specialized)
         "philosophy": "humanities", "psychology": "humanities", "religion": "humanities",
         "social science": "social_science",
@@ -1403,7 +1446,7 @@ function analyzeBookStructure(info) {
         "art": "art", "design": "art",
         "language arts & disciplines": "language", "foreign language": "language",
         "study aids": "license", // 資格・試験
-    
+
         // ■ 児童書 (Children)
         "juvenile nonfiction": "nonfiction",
         "biography & autobiography": "biography",
@@ -1412,167 +1455,171 @@ function analyzeBookStructure(info) {
         "fairy tales": "fairytale"
     };
     
-  const TARGET_KEYWORDS = {
-      "university": ["大学", "学部", "卒", "資格", "専門", "キャンパス", "論文", "研究"],
-      "high_school": ["高校", "大学受験", "共通テスト", "センター試験", "青春", "赤本", "チャート式", "ターゲット", "重要問題集", "数I", "数A", "物理基礎"],
-      "junior_high": ["中学", "高校入試", "中学生"],
-      "elementary": ["小学", "中学入試", "児童", "こども", "絵本"],
-      "infant": ["幼児", "絵本", "読み聞かせ"]
-  };
+    const TARGET_KEYWORDS = {
+        "university": ["大学", "学部", "卒", "資格", "専門", "キャンパス", "論文", "研究"],
+        "high_school": ["高校", "大学受験", "共通テスト", "センター試験", "青春", "赤本", "チャート式", "ターゲット", "重要問題集", "数I", "数A", "物理基礎"],
+        "junior_high": ["中学", "高校入試", "中学生"],
+        "elementary": ["小学", "中学入試", "児童", "こども", "絵本"],
+        "infant": ["幼児", "絵本", "読み聞かせ"]
+    };
 
-  const apiCats = (info.categories || []).join(" ").toLowerCase();
-  
-  const fullText = JSON.stringify([
-      info.title || "", 
-      info.categories || [], 
-      info.description || ""
-  ]).toLowerCase();
+    const apiCats = (info.categories || []).join(" ").toLowerCase();
+    const fullText = JSON.stringify([
+        info.title || "", 
+        info.categories || [], 
+        info.description || ""
+    ]).toLowerCase();
 
-  let main = "other";
-  let targets = new Set();
-  let subs = new Set();
+    let main = "other";
+    let targets = new Set();
+    let subs = new Set();
 
-  if (apiCats.includes("juvenile") || apiCats.includes("children")) {
-      main = "children";
-      if (fullText.includes("young adult")) targets.add("high_school");
-      else targets.add("elementary");
-  }
-  else if (apiCats.includes("fiction") || apiCats.includes("literature") || apiCats.includes("drama") || apiCats.includes("poetry")) {
-      main = "literature";
-  }
-  else if (apiCats.includes("comics") || apiCats.includes("manga")) {
-      main = "literature"; 
-      subs.add("manga"); 
-  }
-  else if (apiCats.includes("business") || apiCats.includes("economics")) {
-      main = "business";
-  }
-  else if (apiCats.includes("study aids") || apiCats.includes("education") || apiCats.includes("foreign language study")) {
-      main = "study";
-  }
-  else if (
-      apiCats.includes("computers") || apiCats.includes("technology") || 
-      apiCats.includes("science") || apiCats.includes("medical") || 
-      apiCats.includes("mathematics") || apiCats.includes("law") || 
-      apiCats.includes("psychology") || apiCats.includes("architecture") ||
-      apiCats.includes("engineering")
-  ) {
-      main = "specialized";
-  }
-  else if (
-      apiCats.includes("cooking") || apiCats.includes("travel") || 
-      apiCats.includes("health") || apiCats.includes("fitness") || 
-      apiCats.includes("crafts") || apiCats.includes("hobbies") || 
-      apiCats.includes("sports") || apiCats.includes("art") || 
-      apiCats.includes("music") || apiCats.includes("photography") ||
-      apiCats.includes("gardening")
-  ) {
-      main = "hobby";
-  }
-  
-  if (main === "other") {
-    if (fullText.includes("絵本") || fullText.includes("童話") || fullText.includes("こども") || fullText.includes("図鑑") || fullText.includes("小学館") || fullText.includes("キッズ") || fullText.includes("えほん")) {
+    // 1. カテゴリからのメインジャンル判定
+    if (apiCats.includes("juvenile") || apiCats.includes("children")) {
         main = "children";
-        targets.add("elementary"); 
+        if (fullText.includes("young adult")) targets.add("high_school");
+        else targets.add("elementary");
     }
-    else if (fullText.includes("大学入試") || fullText.includes("参考書")) main = "study";
-    else if (fullText.includes("小説") || fullText.includes("文庫")) main = "literature";
+    else if (apiCats.includes("fiction") || apiCats.includes("literature") || apiCats.includes("drama") || apiCats.includes("poetry")) {
+        main = "literature";
+    }
+    else if (apiCats.includes("comics") || apiCats.includes("manga")) {
+        main = "literature"; 
+        subs.add("manga"); 
+    }
+    else if (apiCats.includes("business") || apiCats.includes("economics")) {
+        main = "business";
+    }
+    else if (apiCats.includes("study aids") || apiCats.includes("education") || apiCats.includes("foreign language study")) {
+        main = "study";
+    }
     else if (
-        fullText.includes("技術") || fullText.includes("工学") || 
-        fullText.includes("プログラミング") || fullText.includes("ソフトウェア") || 
-        fullText.includes("コード") || fullText.includes("エンジニア") ||
-        fullText.includes("言語") || fullText.includes("システム")
+        apiCats.includes("computers") || apiCats.includes("technology") || 
+        apiCats.includes("science") || apiCats.includes("medical") || 
+        apiCats.includes("mathematics") || apiCats.includes("law") || 
+        apiCats.includes("psychology") || apiCats.includes("architecture") ||
+        apiCats.includes("engineering")
     ) {
         main = "specialized";
     }
-    else if (fullText.includes("ビジネス") || fullText.includes("投資") || fullText.includes("マネジメント")) main = "business";
-    else if (fullText.includes("レシピ") || fullText.includes("旅行") || fullText.includes("ガイド")) main = "hobby";
-  }
-
-  for (const [key, val] of Object.entries(API_SUBGENRE_MAP)) {
-      if (apiCats.includes(key)) {
-          subs.add(val);
-      }
-  }
-// 文芸  
-if (fullText.includes("ミステリー") || fullText.includes("推理") || fullText.includes("探偵")) subs.add("mystery");  
-if (fullText.includes("ファンタジー")) subs.add("fantasy");  
-if (fullText.includes("恋愛") || fullText.includes("ラブ") || fullText.includes("恋")) subs.add("romance");  
-if (fullText.includes("sf") || fullText.includes("空想科学") || fullText.includes("サイエンスフィクション")) subs.add("sf");  
-if (fullText.includes("歴史") || fullText.includes("時代") || fullText.includes("三国志") || fullText.includes("戦争") || fullText.includes("戦闘機")) subs.add("history");  
-if (fullText.includes("政治")) subs.add("politics");  
-if (fullText.includes("ホラー") || fullText.includes("怖い")) subs.add("horror");  
-if (fullText.includes("青春") || fullText.includes("部活")) subs.add("youth");  
-if (fullText.includes("感動") || fullText.includes("ドラマ") || fullText.includes("泣ける")  || fullText.includes("泣いた")|| fullText.includes("人間模様")) subs.add("human");  
-if (fullText.includes("ライトノベル") || fullText.includes("ラノベ")) subs.add("lightnovel");  
-if (fullText.includes("官能") || fullText.includes("エロ")) subs.add("sensual");  
-
-// ビジネス  
-if (fullText.includes("戦略") || fullText.includes("起業") || fullText.includes("経営")) subs.add("management");  
-if (fullText.includes("販促") || fullText.includes("マーケティング")) subs.add("marketing");  
-if (fullText.includes("リーダー") || fullText.includes("リーダーシップ")) subs.add("leadership");  
-if (fullText.includes("仕事") || fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
-if (fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産")) subs.add("finance");  
-if (fullText.includes("政治") || fullText.includes("経済")) subs.add("economy");  
-if (fullText.includes("業界")) subs.add("industry");  
-if (fullText.includes("データ") || fullText.includes("人工知能") || fullText.includes("ai")) subs.add("data");  
-if (fullText.includes("キャリア") || fullText.includes("転職")) subs.add("career");  
-
-// 趣味・実用  
-if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子")) subs.add("cooking");  
-if (fullText.includes("育児") || fullText.includes("子育て")) subs.add("parenting");  
-if (fullText.includes("健康") || fullText.includes("ヨガ") || fullText.includes("筋トレ") || fullText.includes("フィットネス")) subs.add("health");
-if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア")) subs.add("beauty");  
-if (fullText.includes("マナー") || fullText.includes("冠婚葬祭") || fullText.includes("結婚式") || fullText.includes("葬式") || fullText.includes("法要") || fullText.includes("法事")) subs.add("manners");  
-if (fullText.includes("旅行") || fullText.includes("ガイド") || fullText.includes("観光") || fullText.includes("名所") || fullText.includes("パワースポット")) subs.add("travel");  
-if (fullText.includes("園芸") || fullText.includes("盆栽") || fullText.includes("植木") || fullText.includes("芝生") || fullText.includes("生花")) subs.add("gardening");
-if (fullText.includes("スポーツ") || fullText.includes("運動") || fullText.includes("野球") || fullText.includes("サッカー") || fullText.includes("テニス") || fullText.includes("ゴルフ") || fullText.includes("水泳") || fullText.includes("バスケ")) subs.add("sports");  
-if (fullText.includes("カメラ") || fullText.includes("一眼") || fullText.includes("写真") || fullText.includes("フォト")) subs.add("camera");  
-if (fullText.includes("鉄道") || fullText.includes("撮り鉄")) subs.add("railway");  
-if (fullText.includes("将棋") || fullText.includes("囲碁") || fullText.includes("チェス") || fullText.includes("麻雀") || fullText.includes("飛車")) subs.add("igo_shogi");  
-
-// 専門書  
-if (fullText.includes("人文") || fullText.includes("哲学") || fullText.includes("心理") || fullText.includes("倫理")) subs.add("humanities");  
-if (fullText.includes("社会科学")) subs.add("social_science");  
-if (fullText.includes("理工") || fullText.includes("科学技術") || fullText.includes("機械") || fullText.includes("建築")) subs.add("science_tech");  
-if (fullText.includes("医学") || fullText.includes("看護") || fullText.includes("医療")) subs.add("medical");  
-if (fullText.includes("芸術") || fullText.includes("デザイン") || fullText.includes("アート")) subs.add("art");  
-if (fullText.includes("語学") || fullText.includes("英語")) subs.add("language");  
-if (fullText.includes("資格") || fullText.includes("検定")) subs.add("license");  
-
-// 児童書  
-if (fullText.includes("絵本") || fullText.includes("えほん")) subs.add("picturebook");
-if (fullText.includes("童話") || fullText.includes("どうわ")) subs.add("fairytale");
-if (fullText.includes("ファンタジー")) subs.add("fantasy");
-if (fullText.includes("SF") || fullText.includes("エスエフ")) subs.add("sf");
-if (fullText.includes("ミステリー")) subs.add("mystery");  
-if (fullText.includes("歴史") || fullText.includes("れきし")) subs.add("history");  
-if (fullText.includes("ノンフィクション")) subs.add("nonfiction");  
-if (fullText.includes("詩") || fullText.includes("ポエム")) subs.add("poem");  
-if (fullText.includes("伝記")) subs.add("biography");  
-if (fullText.includes("学習まんが")) subs.add("study_manga");  
-if (fullText.includes("図鑑") || fullText.includes("ずかん")) subs.add("zukan");  
-
-// 学習参考書
-if (fullText.includes("確率") || fullText.includes("整数")) subs.add("math_ia");
-if (fullText.includes("ベクトル") || fullText.includes("漸化式") || fullText.includes("数列")) subs.add("math_iib");
-
-// 何もヒットしなかった場合  
-if (subs.size === 0) subs.add("other");
-
-  for (const [key, keywords] of Object.entries(TARGET_KEYWORDS)) {
-      if (keywords.some(k => fullText.includes(k))) targets.add(key);
-  }
+    else if (
+        apiCats.includes("cooking") || apiCats.includes("travel") || 
+        apiCats.includes("health") || apiCats.includes("fitness") || 
+        apiCats.includes("crafts") || apiCats.includes("hobbies") || 
+        apiCats.includes("sports") || apiCats.includes("art") || 
+        apiCats.includes("music") || apiCats.includes("photography") ||
+        apiCats.includes("gardening")
+    ) {
+        main = "hobby";
+    }
   
-  if ((main === "literature" || main === "study") && targets.size === 0) {
-      targets.add("general");
-  }
+    // 2. キーワードからのサブジャンル判定（APIカテゴリベース）
+    for (const [key, val] of Object.entries(API_SUBGENRE_MAP)) {
+        if (apiCats.includes(key)) subs.add(val);
+    }
 
-  return {
-      mainGenre: main,
-      subGenres: Array.from(subs),
-      target: Array.from(targets) 
-  };
+    // 3. 全文テキストからのキーワード判定
+    // 文芸  
+    if (fullText.includes("ミステリー") || fullText.includes("推理") || fullText.includes("探偵")) subs.add("mystery");  
+    if (fullText.includes("ファンタジー")) subs.add("fantasy");  
+    if (fullText.includes("恋愛") || fullText.includes("ラブ") || fullText.includes("恋")) subs.add("romance");  
+    if (fullText.includes("sf") || fullText.includes("空想科学") || fullText.includes("サイエンスフィクション")) subs.add("sf");  
+    if (fullText.includes("歴史") || fullText.includes("時代") || fullText.includes("三国志") || fullText.includes("戦争") || fullText.includes("戦闘機")) subs.add("history");  
+    if (fullText.includes("政治")) subs.add("politics");  
+    if (fullText.includes("ホラー") || fullText.includes("怖い")) subs.add("horror");  
+    if (fullText.includes("青春") || fullText.includes("部活")) subs.add("youth");  
+    if (fullText.includes("感動") || fullText.includes("ドラマ") || fullText.includes("泣ける")  || fullText.includes("泣いた")|| fullText.includes("人間模様")) subs.add("human");  
+    if (fullText.includes("ライトノベル") || fullText.includes("ラノベ")) subs.add("lightnovel");  
+    if (fullText.includes("官能") || fullText.includes("エロ")) subs.add("sensual");  
+
+    // ビジネス  
+    if (fullText.includes("戦略") || fullText.includes("起業") || fullText.includes("経営")) subs.add("management");  
+    if (fullText.includes("販促") || fullText.includes("マーケティング")) subs.add("marketing");  
+    if (fullText.includes("リーダー") || fullText.includes("リーダーシップ")) subs.add("leadership");  
+    if (fullText.includes("仕事") || fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
+    if (fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産")) subs.add("finance");  
+    if (fullText.includes("政治") || fullText.includes("経済")) subs.add("economy");  
+    if (fullText.includes("業界")) subs.add("industry");  
+    if (fullText.includes("データ") || fullText.includes("人工知能") || fullText.includes("ai")) subs.add("data");  
+    if (fullText.includes("キャリア") || fullText.includes("転職")) subs.add("career");  
+
+    // 趣味・実用  
+    if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子")) subs.add("cooking");  
+    if (fullText.includes("育児") || fullText.includes("子育て")) subs.add("parenting");  
+    if (fullText.includes("健康") || fullText.includes("ヨガ") || fullText.includes("筋トレ") || fullText.includes("フィットネス")) subs.add("health");
+    if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア")) subs.add("beauty");  
+    if (fullText.includes("マナー") || fullText.includes("冠婚葬祭") || fullText.includes("結婚式") || fullText.includes("葬式") || fullText.includes("法要") || fullText.includes("法事")) subs.add("manners");  
+    if (fullText.includes("旅行") || fullText.includes("ガイド") || fullText.includes("観光") || fullText.includes("名所") || fullText.includes("パワースポット")) subs.add("travel");  
+    if (fullText.includes("園芸") || fullText.includes("盆栽") || fullText.includes("植木") || fullText.includes("芝生") || fullText.includes("生花")) subs.add("gardening");
+    if (fullText.includes("スポーツ") || fullText.includes("運動") || fullText.includes("野球") || fullText.includes("サッカー") || fullText.includes("テニス") || fullText.includes("ゴルフ") || fullText.includes("水泳") || fullText.includes("バスケ")) subs.add("sports");  
+    if (fullText.includes("カメラ") || fullText.includes("一眼") || fullText.includes("写真") || fullText.includes("フォト")) subs.add("camera");  
+    if (fullText.includes("鉄道") || fullText.includes("撮り鉄")) subs.add("railway");  
+    if (fullText.includes("将棋") || fullText.includes("囲碁") || fullText.includes("チェス") || fullText.includes("麻雀") || fullText.includes("飛車")) subs.add("igo_shogi");  
+
+    // 専門書  
+    if (fullText.includes("人文") || fullText.includes("哲学") || fullText.includes("心理") || fullText.includes("倫理")) subs.add("humanities");  
+    if (fullText.includes("社会科学")) subs.add("social_science");  
+    if (fullText.includes("理工") || fullText.includes("科学技術") || fullText.includes("機械") || fullText.includes("建築")) subs.add("science_tech");  
+    if (fullText.includes("医学") || fullText.includes("看護") || fullText.includes("医療")) subs.add("medical");  
+    if (fullText.includes("芸術") || fullText.includes("デザイン") || fullText.includes("アート")) subs.add("art");  
+    if (fullText.includes("語学") || fullText.includes("英語")) subs.add("language");  
+    if (fullText.includes("資格") || fullText.includes("検定")) subs.add("license");  
+
+    // 児童書  
+    if (fullText.includes("絵本") || fullText.includes("えほん")) subs.add("picturebook");
+    if (fullText.includes("童話") || fullText.includes("どうわ")) subs.add("fairytale");
+    if (fullText.includes("ファンタジー")) subs.add("fantasy");
+    if (fullText.includes("SF") || fullText.includes("エスエフ")) subs.add("sf");
+    if (fullText.includes("ミステリー")) subs.add("mystery");  
+    if (fullText.includes("歴史") || fullText.includes("れきし")) subs.add("history");  
+    if (fullText.includes("ノンフィクション")) subs.add("nonfiction");  
+    if (fullText.includes("詩") || fullText.includes("ポエム")) subs.add("poem");  
+    if (fullText.includes("伝記")) subs.add("biography");  
+    if (fullText.includes("学習まんが")) subs.add("study_manga");  
+    if (fullText.includes("図鑑") || fullText.includes("ずかん")) subs.add("zukan");  
+
+    // 学習参考書
+    if (fullText.includes("確率") || fullText.includes("整数")) subs.add("math_ia");
+    if (fullText.includes("ベクトル") || fullText.includes("漸化式") || fullText.includes("数列")) subs.add("math_iib");
+
+    // 4. ★改善：メインジャンルが other の場合、サブジャンルから推測する
+    if (main === "other" && subs.size > 0) {
+        const counts = {};
+        subs.forEach(s => {
+            const m = SUB_TO_MAIN_MAP[s];
+            if (m) counts[m] = (counts[m] || 0) + 1;
+        });
+
+        const candidates = Object.keys(counts);
+        if (candidates.length > 0) {
+            candidates.sort((a, b) => {
+                // 1. 出現回数が多い順
+                if (counts[b] !== counts[a]) return counts[b] - counts[a];
+                // 2. 回数が同じなら優先度順
+                return MAIN_GENRE_PRIORITY.indexOf(a) - MAIN_GENRE_PRIORITY.indexOf(b);
+            });
+            main = candidates[0];
+        }
+    }
+
+    // 5. ターゲット判定
+    for (const [key, keywords] of Object.entries(TARGET_KEYWORDS)) {
+        if (keywords.some(k => fullText.includes(k))) targets.add(key);
+    }
+    
+    // 補完：文芸や学習参考書でターゲットが不明な場合は一般向けとする
+    if ((main === "literature" || main === "study") && targets.size === 0) {
+        targets.add("general");
+    }
+
+    // 何もサブジャンルがヒットしなかった場合のみ other を入れる
+    if (subs.size === 0) subs.add("other");
+
+    return {
+        mainGenre: main,
+        subGenres: Array.from(subs),
+        target: Array.from(targets) 
+    };
 }
 
 /**
