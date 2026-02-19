@@ -472,6 +472,7 @@ function setupGenreSection(genreId) {
           applyLocalFilter(genreId);
       });
       searchInput.addEventListener("keydown", async (e) => {
+        if (e.isComposing) return;
           if (e.key === "Enter") {
               const keyword = searchInput.value.trim();
               if (keyword) {
@@ -1614,7 +1615,7 @@ function analyzeBookStructure(info) {
     // ビジネス  
     if (fullText.includes("戦略") || fullText.includes("起業") || fullText.includes("経営")) subs.add("management");  
     if (fullText.includes("販促") || fullText.includes("マーケティング")) subs.add("marketing");  
-    if (fullText.includes("リーダー") || fullText.includes("リーダーシップ")) subs.add("leadership");  
+    if (fullText.includes("リーダー") || fullText.includes("リーダーシップ") || fullText.includes("人を動かす") || fullText.includes("マネジメント") || fullText.includes("マネジャー")) subs.add("leadership");  
     if (fullText.includes("仕事") || fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
     if (fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産")) subs.add("finance");  
     if (fullText.includes("政治") || fullText.includes("経済")) subs.add("economy");  
@@ -1797,6 +1798,7 @@ function setup2026Section() {
             applyLocalFilter(sectionId);
         });
         searchInput.addEventListener("keydown", async (e) => {
+            if (e.isComposing) return;
             if (e.key === "Enter") {
                 const keyword = searchInput.value.trim();
                 if (keyword) {
