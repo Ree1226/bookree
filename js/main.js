@@ -1423,6 +1423,50 @@ const SUB_TO_MAIN_MAP = {
     "japanese_elem": "study", "math_elem": "study", "science_elem": "study", "social_elem": "study", "english_elem": "study"
 };
 
+// ラノベ判定用レーベルリスト
+const LN_LABEL_KEYWORDS = [
+    // --- 男性向け・総合 ---
+    "電撃文庫", "ファンタジア文庫", "MF文庫J", "角川スニーカー文庫", "GA文庫", 
+    "HJ文庫", "オーバーラップ文庫", "講談社ラノベ文庫", "ガガガ文庫", "ダッシュエックス文庫", 
+    "ファミ通文庫", "モンスター文庫", "一迅社文庫", "ノベルゼロ",
+
+    // --- 新文芸（単行本ラノベ・WEB小説発） ---
+    "GCノベルズ", "カドカワBOOKS", "ヒーロー文庫", "PASH!ブックス", "アース・スターノベル", 
+    "ツギクルブックス", "アルファポリス", "TOブックス", "Mノベルス", "SQEXノベル", 
+    "モーニングスターブックス", "サーガフォレスト", "レジェンドノベルス",
+
+    // --- 女性向け（乙女系・異世界恋愛） ---
+    "ビーズログ文庫", "角川ビーンズ文庫", "ルビー文庫", "コバルト文庫", "アイリス文庫", 
+    "一迅社文庫アイリス", "レジーナブックス", "アリアンローズ", "メリッサ", "フェアリーキス", 
+    "ジュエルブックス", "乙女ドルチェ",
+
+    // --- ライト文芸（キャラ文芸） ---
+    // ※これらを「ラノベ」に含めるかは好みですが、一般的にラノベコーナーに置かれます
+    "メディアワークス文庫", "富士見L文庫", "集英社オレンジ文庫", "講談社タイガ", "スカイハイ文庫"
+];
+// ラノベ判定
+function isLightNovel(info) {
+    const publisher = info.publisher || "";
+    const description = info.description || "";
+    const categories = info.categories ? info.categories.join(",") : "";
+    const title = info.title || "";
+
+    // 1. 出版社・カテゴリ・説明文・タイトルにレーベル名が含まれているかチェック
+    const isLabelMatch = LN_LABEL_KEYWORDS.some(label => 
+        publisher.includes(label) || 
+        categories.includes(label) || 
+        description.includes(label) ||
+        title.includes(label)
+    );
+
+    if (isLabelMatch) return true;
+
+    // 2. 補助判定：Googleのカテゴリに "Light Novels" が含まれている場合
+    if (categories.toLowerCase().includes("light novel")) return true;
+
+    return false;
+}
+
 // --- 追加：メインジャンルの優先度（カウントが同数の場合の決選投票用） ---
 const MAIN_GENRE_PRIORITY = ['literature', 'business', 'specialized', 'hobby', 'children', 'study'];
 
@@ -1497,6 +1541,18 @@ function analyzeBookStructure(info) {
     let targets = new Set();
     let subs = new Set();
 
+    // ラノベ判定
+    if (isLightNovel(info)) {        
+        main = "literature";       
+        subs.add("lightnovel");
+        targets.add("youth");              
+        return {             
+            mainGenre: main,             
+            subGenres: Array.from(subs),             
+            target: Array.from(targets)         
+        };     
+    }
+    
     // 1. カテゴリからのメインジャンル判定
     if (apiCats.includes("juvenile") || apiCats.includes("children")) {
         main = "children";
