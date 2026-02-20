@@ -563,17 +563,49 @@ function filterByDropdowns(genreId) {
     return filtered;
 }
 
+/**
+ * 文字列を検索用に正規化する共通関数
+ * 1. 大文字 -> 小文字
+ * 2. 全角英数字 -> 半角英数字
+ * 3. カタカナ -> ひらがな
+ */
+function normalizeText(str) {
+    if (!str) return "";
+    return str
+        .toLowerCase()
+        // 全角英数字・記号を半角に変換
+        .replace(/[！-～]/g, function(s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0xfee0);
+        })
+        // カタカナをひらがなに変換
+        .replace(/[\u30a1-\u30f6]/g, function(s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0x60);
+        })
+        .trim();
+}
+
 function filterByText(genreId, books) {
     const searchEl = document.getElementById(`search-${genreId}`);
     if (!searchEl) return books;
-    const searchVal = searchEl.value.trim().toLowerCase();
+
+    // 【修正ポイント1】入力値を正規化（ひらがな化・半角化）
+    const searchVal = normalizeText(searchEl.value);
     if (searchVal === "") return books;
+
     return books.filter(b => {
-        const title = (b.title || "").toLowerCase();
+        // 【修正ポイント2】本のタイトルを正規化
+        const title = normalizeText(b.title || "");
+
+        // 【修正ポイント3】著者名を正規化
         let authorStr = "";
-        if (Array.isArray(b.authors)) authorStr = b.authors.join(" ");
-        else if (b.author) authorStr = b.author;
-        authorStr = authorStr.toLowerCase();
+        if (Array.isArray(b.authors)) {
+            authorStr = b.authors.join(" ");
+        } else if (b.author) {
+            authorStr = b.author;
+        }
+        authorStr = normalizeText(authorStr);
+
+        // 正規化したもの同士で比較
         return title.includes(searchVal) || authorStr.includes(searchVal);
     });
 }
@@ -856,6 +888,13 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
         const apiKey = "AIzaSyCL88yBdIcEZIh_Zrw-NOmy-QtRCNB0cns"; // 既存のキーを使用
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=20&startIndex=${startIndex}&key=${apiKey}`);      
         const data = await res.json();
+
+        // --- ここに追加 ---
+        console.log("Google Books APIから届いたデータ:", data.items);
+        if (data.items && data.items.length > 0) {
+            console.log("1冊目の詳細情報 (volumeInfo):", data.items[0].volumeInfo);
+        }
+        // -----------------
 
         // 新規検索なら一旦クリア
         if (!isLoadMore) container.innerHTML = ""; 
@@ -1617,7 +1656,7 @@ function analyzeBookStructure(info) {
     if (fullText.includes("販促") || fullText.includes("マーケティング")) subs.add("marketing");  
     if (fullText.includes("リーダー") || fullText.includes("リーダーシップ") || fullText.includes("人を動かす") || fullText.includes("マネジメント") || fullText.includes("マネジャー")) subs.add("leadership");  
     if (fullText.includes("仕事") || fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
-    if (fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産")) subs.add("finance");  
+    if (fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産") || fullText.includes("お金")) subs.add("finance");  
     if (fullText.includes("政治") || fullText.includes("経済")) subs.add("economy");  
     if (fullText.includes("業界")) subs.add("industry");  
     if (fullText.includes("データ") || fullText.includes("人工知能") || fullText.includes("ai")) subs.add("data");  
