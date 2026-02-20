@@ -886,7 +886,7 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
     try {
         const startIndex = searchIndices[genreId] || 0;
         const apiKey = "AIzaSyCL88yBdIcEZIh_Zrw-NOmy-QtRCNB0cns"; // 既存のキーを使用
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=20&startIndex=${startIndex}&key=${apiKey}`);      
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=20&startIndex=${startIndex}&maxAllowedMaturityRating=not-mature&key=${apiKey}`);        
         const data = await res.json();
 
         // --- ここに追加 ---
@@ -1428,7 +1428,7 @@ const SUB_TO_MAIN_MAP = {
     // 文芸 (literature)
     "mystery": "literature", "fantasy": "literature", "romance": "literature", "sf": "literature",
     "history": "literature", "politics": "literature", "horror": "literature", "youth": "literature",
-    "human": "literature", "lightnovel": "literature", "sensual": "literature", "manga": "literature",
+    "human": "literature", "lightnovel": "literature", "manga": "literature",
 
     // ビジネス (business)
     "management": "business", "marketing": "business", "leadership": "business", "work": "business",
@@ -1649,7 +1649,6 @@ function analyzeBookStructure(info) {
     if (fullText.includes("青春") || fullText.includes("部活")) subs.add("youth");  
     if (fullText.includes("感動") || fullText.includes("ドラマ") || fullText.includes("泣ける")  || fullText.includes("泣いた")|| fullText.includes("人間模様")) subs.add("human");  
     if (fullText.includes("ライトノベル") || fullText.includes("ラノベ")) subs.add("lightnovel");  
-    if (fullText.includes("官能") || fullText.includes("エロ")) subs.add("sensual");  
 
     // ビジネス  
     if (fullText.includes("戦略") || fullText.includes("起業") || fullText.includes("経営")) subs.add("management");  
