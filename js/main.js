@@ -827,6 +827,9 @@ function updateChart(genreId, books) {
           }
         }
     });
+    const searchInput = document.getElementById(`search-${genreId}`);     
+    const currentSearchStr = searchInput ? searchInput.value : "";    
+    highlightChartItems(genreId, currentSearchStr);
   }
       
   function createBookCard(book, rank = null, displayType = 'score') {
