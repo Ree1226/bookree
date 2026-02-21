@@ -559,23 +559,17 @@ function highlightChartItems(genreId, str) {
     const chart = chartInstances[genreId]; 
     if (!chart) return;
 
-    // 1. 検索キーワードを正規化
     const normalizedKeyword = normalizeText(str.trim());
     
-    // 2. データのコピーを作成し、グラフと同じ「スコア順」にソートする
-    // ※ここがズレていると、ハイライトされる棒の場所が狂います
     let books = [...(loadedBooks[genreId] || [])];
     if (books.length === 0) return;
 
-    // updateChart と同じソートロジックを適用
     books.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    // 3. 表示件数に合わせて切り出し
     const limitEl = document.getElementById(`chart-limit-${genreId}`);
     const displayCount = limitEl ? parseInt(limitEl.value, 10) : 10;
     const topBooks = books.slice(0, displayCount);
 
-    // 4. ジャンルごとのテーマカラー設定
     const genreColorMap = {
         '2026': '191, 33, 33', 
         'literature': '21, 101, 192',
@@ -587,24 +581,29 @@ function highlightChartItems(genreId, str) {
     };
     const themeRGB = genreColorMap[genreId] || '52, 152, 219';
 
-    // 5. 各棒の色を決定
     const backgroundColors = topBooks.map((book) => {
-        // キーワードが空の場合は通常色
         if (!normalizedKeyword) return `rgba(${themeRGB}, 0.7)`;
 
-        // タイトルと著者名を正規化（authorNameプロパティも念のためチェック）
-        const normalizedTitle = normalizeText(book.title || "");
-        const normalizedAuthor = normalizeText(book.author || book.authorName || "");
+        const title = book.title || "";
+        
+        // 【修正ポイント】著者名を取得し、もし配列なら文字列に変換する
+        let authorData = book.author || book.authors || book.author_name || book.writer || "";
+        
+        // もし authorData が配列（['著者名']）なら、カンマ区切りの文字列に変換
+        if (Array.isArray(authorData)) {
+            authorData = authorData.join(', ');
+        }
+
+        const normalizedTitle = normalizeText(String(title));
+        const normalizedAuthor = normalizeText(String(authorData));
 
         // タイトルまたは著者名にキーワードが含まれているか
         const isMatch = normalizedTitle.includes(normalizedKeyword) || 
                         normalizedAuthor.includes(normalizedKeyword);
 
-        // ヒットした場合は強調(1.0)、しない場合は薄く(0.15)
         return isMatch ? `rgba(${themeRGB}, 1)` : `rgba(${themeRGB}, 0.15)`;
     });
 
-    // 6. グラフに反映
     chart.data.datasets[0].backgroundColor = backgroundColors;
     chart.update('none'); 
 }
