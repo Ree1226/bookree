@@ -467,27 +467,58 @@ function setupGenreSection(genreId) {
 
   const searchInput = document.getElementById(`search-${genreId}`);
   const searchBtn = document.getElementById(`btn-search-${genreId}`);
+  const errorMsg = document.getElementById(`search-error-${genreId}`); // エラーメッセージ要素を取得
+
   if (searchInput) {
       searchInput.addEventListener("input", () => {
           const keyword = searchInput.value.trim(); 
+          
+          // 1. 不適切ワードチェック
+          const isSafe = isSafeText(keyword);
+
+          if (!isSafe) {
+              // --- 不適切なワードが含まれている場合 ---
+              if (errorMsg) errorMsg.style.display = "block"; // メッセージ表示
+              if (searchBtn) searchBtn.disabled = true;       // ボタンを無効化
+              searchInput.style.borderColor = "#ff4d4f";     // 枠線を赤くする
+              
+              // グラフのハイライトは消去する
+              highlightChartItems(genreId, "");
+              return; 
+          } else {
+              // --- 安全な場合（または空文字の場合） ---
+              if (errorMsg) errorMsg.style.display = "none";  // メッセージ非表示
+              if (searchBtn) searchBtn.disabled = false;      // ボタンを有効化
+              searchInput.style.borderColor = "";            // 枠線を元に戻す
+          }
+
+          // 2. 通常の処理（安全な場合のみ実行）
           isWebSearching[genreId] = false;
           applyLocalFilter(genreId);
           highlightChartItems(genreId, keyword);
       });
+
+      // Enterキー押下時の処理
       searchInput.addEventListener("keydown", async (e) => {
-        if (e.isComposing) return;
+          if (e.isComposing) return;
           if (e.key === "Enter") {
               const keyword = searchInput.value.trim();
-              if (keyword) {
+              // 安全かつ文字が入っている場合のみ外部検索を実行
+              if (keyword && isSafeText(keyword)) {
                   e.preventDefault();
                   await searchExternalBooks(genreId, keyword);
               }
           }
       });
+
+      // 検索ボタンクリック時の処理
       if (searchBtn) {
           searchBtn.addEventListener("click", async () => {
               const keyword = searchInput.value.trim();
-              if (keyword) await searchExternalBooks(genreId, keyword);
+              // 安全かつ文字が入っている場合のみ外部検索を実行
+              if (keyword && isSafeText(keyword)) {
+                  await searchExternalBooks(genreId, keyword);
+              }
           });
       }
   }
@@ -669,6 +700,23 @@ function filterByText(genreId, books) {
     });
 }
 
+// 1. NGワードリストの定義（適宜追加してください）
+const BANNED_KEYWORDS = ["不適切ワード1", "不適切ワード2"]; 
+
+// 2. 判定関数の定義
+function isSafeText(text) {
+    if (!text) return true;
+    
+    // 以前作成した normalizeText を使って、表記揺れを吸収してチェック
+    const normalized = normalizeText(text);
+    
+    return !BANNED_KEYWORDS.some(word => {
+        const normalizedWord = normalizeText(word);
+        // 1文字などの短いワードで誤判定しないよう、3文字以上の場合のみ部分一致チェックする等の工夫も可能です
+        return normalized.includes(normalizedWord);
+    });
+}
+
 function renderBookshelf(genreId, books) {
     const container = document.getElementById(`list-${genreId}`);
     container.innerHTML = "";
@@ -827,9 +875,30 @@ function updateChart(genreId, books) {
           }
         }
     });
-    const searchInput = document.getElementById(`search-${genreId}`);     
-    const currentSearchStr = searchInput ? searchInput.value : "";    
-    highlightChartItems(genreId, currentSearchStr);
+    // --- 関数の末尾部分 ---
+    const searchInput = document.getElementById(`search-${genreId}`);
+    const searchBtn = document.getElementById(`btn-search-${genreId}`);
+    const errorMsg = document.getElementById(`search-error-${genreId}`);
+    
+    const currentSearchStr = searchInput ? searchInput.value.trim() : "";
+
+    // 安全性のチェックを行い、UIの状態を同期させる
+    if (isSafeText(currentSearchStr)) {
+        // 安全な場合
+        if (errorMsg) errorMsg.style.display = "none";
+        if (searchBtn) searchBtn.disabled = false;
+        if (searchInput) searchInput.style.borderColor = "";
+        
+        highlightChartItems(genreId, currentSearchStr);
+    } else {
+        // 不適切なワードが含まれている場合
+        if (errorMsg) errorMsg.style.display = "block";
+        if (searchBtn) searchBtn.disabled = true;
+        if (searchInput) searchInput.style.borderColor = "#ff4d4f";
+        
+        // ハイライトは行わない（クリアする）
+        highlightChartItems(genreId, "");
+    }
   }
       
   function createBookCard(book, rank = null, displayType = 'score') {
@@ -1892,9 +1961,31 @@ function setup2026Section() {
   
     const searchInput = document.getElementById(`search-${sectionId}`);
     const searchBtn = document.getElementById(`btn-search-${sectionId}`);
+    const errorMsg = document.getElementById(`search-error-${sectionId}`); // エラーメッセージ要素を取得
+
     if (searchInput) {
         searchInput.addEventListener("input", () => {
             const keyword = searchInput.value.trim(); 
+
+          // 1. 不適切ワードチェック
+          const isSafe = isSafeText(keyword);
+
+          if (!isSafe) {
+              // --- 不適切なワードが含まれている場合 ---
+              if (errorMsg) errorMsg.style.display = "block"; // メッセージ表示
+              if (searchBtn) searchBtn.disabled = true;       // ボタンを無効化
+              searchInput.style.borderColor = "#ff4d4f";     // 枠線を赤くする
+              
+              // グラフのハイライトは消去する
+              highlightChartItems(genreId, "");
+              return; 
+          } else {
+              // --- 安全な場合（または空文字の場合） ---
+              if (errorMsg) errorMsg.style.display = "none";  // メッセージ非表示
+              if (searchBtn) searchBtn.disabled = false;      // ボタンを有効化
+              searchInput.style.borderColor = "";            // 枠線を元に戻す
+          }
+
             isWebSearching[sectionId] = false;
             applyLocalFilter(sectionId);
             highlightChartItems(sectionId, keyword);
@@ -1903,7 +1994,7 @@ function setup2026Section() {
             if (e.isComposing) return;
             if (e.key === "Enter") {
                 const keyword = searchInput.value.trim();
-                if (keyword) {
+              if (keyword && isSafeText(keyword)) {
                     e.preventDefault();
                     await searchExternalBooks(sectionId, keyword);
                 }
@@ -1912,8 +2003,10 @@ function setup2026Section() {
         if (searchBtn) {
             searchBtn.addEventListener("click", async () => {
                 const keyword = searchInput.value.trim();
-                if (keyword) await searchExternalBooks(sectionId, keyword);
-            });
+                if (keyword && isSafeText(keyword)) {
+                    await searchExternalBooks(sectionId, keyword);
+                }
+              });
         }
     }
 

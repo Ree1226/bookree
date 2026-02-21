@@ -556,6 +556,15 @@ h2 {
     .book-card { min-width: 85vw; max-width: 85vw; }
 }
 
+/* 検索ボタンが無効化された時のスタイル */
+.search-btn:disabled {
+    background-color: #ccc !important; /* 灰色 */
+    border-color: #ccc !important;
+    color: #888 !important;           /* 文字色も少し薄く */
+    cursor: not-allowed;              /* カーソルを禁止マークに */
+    box-shadow: none !important;      /* 影などを消す */
+}
+
 /* --- ヘッダー下のナビゲーションボタン共通スタイル --- */
 .action-btn {
     display: inline-flex;
