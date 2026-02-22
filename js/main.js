@@ -378,7 +378,7 @@ function setupGenreSection(genreId) {
 
   let unsubscribe = null;
 
-    // データを取得・描画する内部関数
+    // Firebaseからデータを取得・描画する内部関数
     const fetchAndRender = () => {
         if (unsubscribe) unsubscribe();
 
@@ -389,6 +389,7 @@ function setupGenreSection(genreId) {
 
         const sortField = currentRankingTypes[genreId] || 'score';
         const constraints = [];
+        constraints.push(where("isExcluded", "==", false)); 
         constraints.push(where("mainGenre", "==", genreId));
 
         // main.js の fetchAndRender 内（195行目付近〜）を以下に差し替え
@@ -1316,10 +1317,6 @@ function determineSmartGenre(openBdData, title) {
         }
         return { target: ['elementary'], genre: 'children', cCode: cCode };
     }
-    
-    if (text.includes("大学") || text.includes("論文") || text.includes("研究") || text.includes("学会")) {
-        return { target: ['univ_general'], genre: 'specialized', cCode: cCode };
-    }
 
     if (cCode) {
         return { target: target, genre: mainGenre, cCode: cCode };
@@ -1482,6 +1479,7 @@ async function voteForNewBook(book, points, cardElement) {
                 image: getSecureImageUrl(info.imageLinks?.thumbnail || ""),
                 categories: info.categories || [],
                 
+                isExcluded: false,
                 publishedDate: pDate,
                 publishedYear: pYear,
                 
@@ -1743,7 +1741,7 @@ function analyzeBookStructure(info) {
     else if (apiCats.includes("study aids") || apiCats.includes("education") || apiCats.includes("foreign language study")) {
         main = "study";
     }
-    else if (
+    /*else if (
         apiCats.includes("computers") || apiCats.includes("technology") || 
         apiCats.includes("science") || apiCats.includes("medical") || 
         apiCats.includes("mathematics") || apiCats.includes("law") || 
@@ -1751,7 +1749,7 @@ function analyzeBookStructure(info) {
         apiCats.includes("engineering")
     ) {
         main = "specialized";
-    }
+    }*/
     else if (
         apiCats.includes("cooking") || apiCats.includes("travel") || 
         apiCats.includes("health") || apiCats.includes("fitness") || 
@@ -1786,10 +1784,10 @@ function analyzeBookStructure(info) {
     if (fullText.includes("販促") || fullText.includes("マーケティング")) subs.add("marketing");  
     if (fullText.includes("リーダー") || fullText.includes("リーダーシップ") || fullText.includes("人を動かす") || fullText.includes("マネジメント") || fullText.includes("マネジャー")) subs.add("leadership");  
     if (fullText.includes("仕事") || fullText.includes("仕事術") || fullText.includes("効率")) subs.add("work");  
-    if (fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産") || fullText.includes("お金")) subs.add("finance");  
+    if (fullText.includes("デイトレード") || fullText.includes("株") || fullText.includes("投資") || fullText.includes("金融") || fullText.includes("資産") || fullText.includes("お金")) subs.add("finance");  
     if (fullText.includes("政治") || fullText.includes("経済")) subs.add("economy");  
     if (fullText.includes("業界")) subs.add("industry");  
-    if (fullText.includes("データ") || fullText.includes("人工知能") || fullText.includes("ai")) subs.add("data");  
+    if (fullText.includes("Gemini") || fullText.includes("Copilot") || fullText.includes("ChatGPT") || fullText.includes("人工知能") || fullText.includes("ai")) subs.add("data");  
     if (fullText.includes("キャリア") || fullText.includes("転職")) subs.add("career");  
 
     // 趣味・実用  
@@ -1895,6 +1893,7 @@ function setup2026Section() {
         const selectedGenre = filterEl ? filterEl.value : 'all';
 
         const constraints = [];
+        constraints.push(where("isExcluded", "==", false)); 
         constraints.push(where("publishedYear", "in", [2025, 2026]));
         
         if (selectedGenre !== 'all') {

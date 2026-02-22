@@ -60,6 +60,20 @@
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         .close-btn { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; color: #999; }
+
+        /* 追加：除外された行のスタイル */
+        .row-excluded {
+            opacity: 0.4; /* かなり薄くする */
+            background-color: #f8f9fa !important;
+        }
+        .row-excluded img {
+            filter: grayscale(100%); /* 画像も白黒に */
+        }
+
+        /* 追加：除外・復帰ボタンのスタイル */
+        .btn-exclude { background-color: #95a5a6; color: white; } /* 除外ボタン（グレー） */
+        .btn-include { background-color: #2ecc71; color: white; } /* 復帰ボタン（緑） */
+
     </style>
 </head>
 <body>
@@ -235,7 +249,6 @@
             </optgroup>
         </select>
         <div style="flex:1;"></div>
-        <button class="btn btn-fix" onclick="runBatchSmartFix()">⚡️ 表示中の本を一括修復 (V6)</button>
     </div>
 
     <div class="table-container">
@@ -469,6 +482,11 @@
             const tr = document.createElement("tr");
             tr.id = `row-${b.id}`;
             
+            const isExcluded = b.isExcluded || false;        
+            if (isExcluded) {            
+                tr.classList.add("row-excluded");        
+            }
+
             let dateStr = "未登録";        
             if (b.createdAt && typeof b.createdAt.toDate === 'function') {
                 const d = b.createdAt.toDate();            
@@ -517,7 +535,10 @@
                     <div class="actions">
                         <button class="btn btn-sm btn-search" onclick="openEdit('${b.id}')">編集</button>
                         <button class="btn btn-sm" style="background:#f1c40f; color:#333;" onclick="setFeatured('${b.id}')">★おすすめ</button>
-                        <button class="btn btn-sm btn-fix" onclick="runSingleSmartFix('${b.id}')">修復</button>
+                        <button class="btn btn-sm ${isExcluded ? 'btn-include' : 'btn-danger'}"                             
+                                onclick="toggleExclusion('${b.id}')">                        
+                            ${isExcluded ? '復帰' : '除外'}                    
+                        </button>                    
                     </div>
                 </td>
             `;
@@ -899,7 +920,10 @@
                                 <div class="actions">
                                     <button class="btn btn-sm btn-search" onclick="openEdit('${b.id}')">編集</button>
                                     <button class="btn btn-sm" style="background:#f1c40f; color:#333;" onclick="setFeatured('${b.id}')">★おすすめ</button>
-                                    <button class="btn btn-sm btn-fix" onclick="runSingleSmartFix('${b.id}')">修復</button>
+                                    <button class="btn btn-sm ${isExcluded ? 'btn-include' : 'btn-danger'}"                             
+                                            onclick="toggleExclusion('${b.id}')">                        
+                                        ${isExcluded ? '復帰' : '除外'}                    
+                                    </button>                                
                                 </div>
                             </td>
                         `;
@@ -1007,7 +1031,7 @@
         return null;
     }
 
-    window.runSingleSmartFix = async (id) => {
+    /*window.runSingleSmartFix = async (id) => {
         const book = currentBooks.find(b => b.id === id);
         if(!book) return;
         
@@ -1049,7 +1073,7 @@
             }
         }
         return null;
-    }
+    }*/
 
     // --- 統計データ読み込み機能（新・日別対応版） ---
     window.loadStats = async () => {
@@ -1281,6 +1305,50 @@
             grid.innerHTML = "<span style='color:red;'>集計エラー</span>";
         } finally {
             if(btn) { btn.disabled = false; btn.textContent = "🔄 更新"; }
+        }
+    };
+
+    // --- 追加：ランキング除外切り替え機能 ---
+    window.toggleExclusion = async (id) => {
+        const book = currentBooks.find(b => b.id === id);
+        if (!book) return;
+
+        const currentStatus = book.isExcluded || false;
+        const newStatus = !currentStatus;
+        const actionText = newStatus ? "ランキングから除外" : "ランキングに復帰";
+
+        if (!confirm(`「${book.title}」を${actionText}させますか？`)) return;
+
+        try {
+            const bookRef = doc(db, "books", id);
+            await updateDoc(bookRef, {
+                isExcluded: newStatus,
+                lastUpdated: serverTimestamp() // 更新日時も記録
+            });
+
+            // ローカルデータの更新
+            book.isExcluded = newStatus;
+
+            // UIの即時更新
+            const tr = document.getElementById(`row-${id}`);
+            if (tr) {
+                if (newStatus) {
+                    tr.classList.add("row-excluded");
+                } else {
+                    tr.classList.remove("row-excluded");
+                }
+                // ボタンのテキストと色を更新
+                const btn = tr.querySelector("button[onclick^='toggleExclusion']");
+                if (btn) {
+                    btn.textContent = newStatus ? "復帰" : "除外";
+                    btn.className = `btn btn-sm ${newStatus ? 'btn-include' : 'btn-danger'}`;
+                }
+            }
+
+            console.log(`${book.title} を ${newStatus ? '除外' : '復帰'} しました`);
+        } catch (e) {
+            console.error("除外設定エラー:", e);
+            alert("エラーが発生しました: " + e.message);
         }
     };
 
