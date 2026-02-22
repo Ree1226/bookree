@@ -1233,13 +1233,17 @@ async function handleVote(book, points, cardElement, currentDisplayType = 'score
         });
   
         try {            
+            const expireDate = new Date();
+            expireDate.setDate(expireDate.getDate() + 30); 
+
             const voteLogRef = collection(db, "vote_logs");            
             await addDoc(voteLogRef, {                
                 bookId: book.id,                
                 title: book.title,                
                 mainGenre: book.mainGenre || "other", // ジャンルがない場合のフォールバック                
                 points: scoreIncrement,               // ボーナス込みのポイントを記録                
-                timestamp: serverTimestamp()            
+                timestamp: serverTimestamp(),
+                expireAt: expireDate            
             });            
             console.log("Trend log recorded for existing book.");        
         } catch (logError) {            
@@ -1513,13 +1517,17 @@ async function voteForNewBook(book, points, cardElement) {
         await setDoc(docRef, updateData, { merge: true });
 
         try {
+            const expireDate = new Date();
+            expireDate.setDate(expireDate.getDate() + 30); 
+
             const voteLogRef = collection(db, "vote_logs");
             await addDoc(voteLogRef, {
                 bookId: targetDocId,      // どの本か
                 title: title,             // (集計を楽にするためタイトルも保持)
                 mainGenre: finalGenre,    // ジャンルごとの集計用
                 points: weightedPoints,   // 加算されたポイント
-                timestamp: serverTimestamp() // いつ投票されたか
+                timestamp: serverTimestamp(), // いつ投票されたか
+                expireAt: expireDate 
             });
         } catch (logError) {
             console.warn("Log recording failed:", logError);
