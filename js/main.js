@@ -12,6 +12,7 @@ import {
   orderBy, 
   limit,
   serverTimestamp,
+  addDoc,
   getDocs,
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -1231,6 +1232,20 @@ async function handleVote(book, points, cardElement, currentDisplayType = 'score
             raw_score: increment(rawIncrement),
         });
   
+        try {            
+            const voteLogRef = collection(db, "vote_logs");            
+            await addDoc(voteLogRef, {                
+                bookId: book.id,                
+                title: book.title,                
+                mainGenre: book.mainGenre || "other", // ジャンルがない場合のフォールバック                
+                points: scoreIncrement,               // ボーナス込みのポイントを記録                
+                timestamp: serverTimestamp()            
+            });            
+            console.log("Trend log recorded for existing book.");        
+        } catch (logError) {            
+            console.warn("Log recording failed:", logError);        
+        }
+
         if (book && book.mainGenre && window.logGenreVote) {
             window.logGenreVote(book.mainGenre);
         }
@@ -1496,6 +1511,20 @@ async function voteForNewBook(book, points, cardElement) {
         }
   
         await setDoc(docRef, updateData, { merge: true });
+
+        try {
+            const voteLogRef = collection(db, "vote_logs");
+            await addDoc(voteLogRef, {
+                bookId: targetDocId,      // どの本か
+                title: title,             // (集計を楽にするためタイトルも保持)
+                mainGenre: finalGenre,    // ジャンルごとの集計用
+                points: weightedPoints,   // 加算されたポイント
+                timestamp: serverTimestamp() // いつ投票されたか
+            });
+        } catch (logError) {
+            console.warn("Log recording failed:", logError);
+        }
+
         console.log(`投票完了: ${title} (Genre: ${finalGenre})`);
   
         if (window.logGenreVote && finalGenre) {
@@ -1791,7 +1820,7 @@ function analyzeBookStructure(info) {
     if (fullText.includes("キャリア") || fullText.includes("転職")) subs.add("career");  
 
     // 趣味・実用  
-    if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子")) subs.add("cooking");  
+    if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子") || fullText.includes("キッチン")) subs.add("cooking");  
     if (fullText.includes("育児") || fullText.includes("子育て")) subs.add("parenting");  
     if (fullText.includes("健康") || fullText.includes("ヨガ") || fullText.includes("筋トレ") || fullText.includes("フィットネス")) subs.add("health");
     if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア")) subs.add("beauty");  

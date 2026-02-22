@@ -158,6 +158,16 @@
     </div>
     <!-- ▲▲▲ ここまで ▲▲▲ -->
 
+    <!-- トレンド分析ボード -->
+    <div class="trend-board-container" style="margin: 20px 0; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <h3 style="margin-bottom: 20px; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+            <span>📈</span> 週間トレンド (ジャンル別TOP3)
+        </h3>
+        <div id="trend-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            <!-- ここにJavaScriptでジャンルごとのカードが生成されます -->
+        </div>
+    </div>
+
     <div class="toolbar">
         <input type="text" id="search-input" class="search-box" placeholder="タイトル、著者、IDで検索...">
         <button class="btn btn-search" onclick="runSearch()">🔍 検索</button>
@@ -381,10 +391,9 @@
             document.getElementById("login-overlay").style.display = "none";
             document.getElementById("app").style.display = "block";
             runSearch(); // 初期ロード
-            
             loadStats(); 
-
             loadInventoryStats();
+            loadTrendBoard();
         } else {
             document.getElementById("login-msg").textContent = "パスワードが違います";
         }
@@ -955,7 +964,7 @@
     };
 
     // --- V6 ハイブリッド修復ロジック ---
-    const HS_KEYWORDS = [
+    /*const HS_KEYWORDS = [
         "大学入試", "大学受験", "共通テスト", "センター試験", "大学入", "大学受",
         "高校生", "高校", "高1", "高2", "高3", 
         "ターゲット", "シス単", "システム英単語", "英単語ターゲット", "単語王", "鉄壁", "速読英単語", "duo 3.0", "duo3.0",
@@ -1031,7 +1040,7 @@
         return null;
     }
 
-    /*window.runSingleSmartFix = async (id) => {
+    window.runSingleSmartFix = async (id) => {
         const book = currentBooks.find(b => b.id === id);
         if(!book) return;
         
@@ -1349,6 +1358,86 @@
         } catch (e) {
             console.error("除外設定エラー:", e);
             alert("エラーが発生しました: " + e.message);
+        }
+    };
+
+    // --- トレンド分析ボードの集計と表示 ---
+    window.loadTrendBoard = async () => {
+        const trendGrid = document.getElementById('trend-grid');
+        trendGrid.innerHTML = "<div style='grid-column: 1/-1; text-align:center; color:#999;'>トレンドデータを集計中...</div>";
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // ジャンル設定（既存の loadInventoryStats と統一）
+        const GENRES = {
+            literature: { name: "文芸", color: "#fce7f3" },
+            business: { name: "経済・ビジネス", color: "#e0f2fe" },
+            hobby: { name: "趣味・実用", color: "#dcfce7" },
+            specialized: { name: "専門書", color: "#f3e8ff" },
+            children: { name: "児童書", color: "#ffedd5" },
+            study: { name: "学習参考書", color: "#fef9c3" }
+        };
+
+        try {
+            // 1. 過去7日間の投票ログを取得
+            const logsRef = collection(db, "vote_logs");
+            const q = query(logsRef, where("timestamp", ">=", sevenDaysAgo));
+            const querySnapshot = await getDocs(q);
+
+            // 2. データを集計 { genre: { bookId: { title, points } } }
+            const aggregation = {};
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                const { mainGenre, bookId, title, points } = data;
+                
+                if (!aggregation[mainGenre]) aggregation[mainGenre] = {};
+                if (!aggregation[mainGenre][bookId]) {
+                    aggregation[mainGenre][bookId] = { title: title, totalPoints: 0 };
+                }
+                aggregation[mainGenre][bookId].totalPoints += points;
+            });
+
+            trendGrid.innerHTML = ""; // クリア
+
+            // 3. 各ジャンルごとにTOP3を表示
+            Object.keys(GENRES).forEach(genreId => {
+                const genreInfo = GENRES[genreId];
+                const booksInGenre = aggregation[genreId] || {};
+                
+                // スコア順にソートしてTOP3を抽出
+                const sortedBooks = Object.entries(booksInGenre)
+                    .map(([id, data]) => ({ id, ...data }))
+                    .sort((a, b) => b.totalPoints - a.totalPoints)
+                    .slice(0, 3);
+
+                // カードの生成
+                const card = document.createElement('div');
+                card.style = `background: ${genreInfo.color}; padding: 15px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column;`;
+                
+                let booksHtml = sortedBooks.length > 0 
+                    ? sortedBooks.map((b, i) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px; background:#fff; padding:8px; border-radius:5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:5px;">
+                                <span style="font-weight:bold; color:#777;">${i+1}.</span> ${b.title}
+                            </div>
+                            <span style="color:#e67e22; font-weight:bold; font-size:11px;">+${b.totalPoints}pt</span>
+                        </div>`).join('')
+                    : '<p style="font-size:12px; color:#888; text-align:center; margin: 20px 0;">期間内の投票なし</p>';
+
+                card.innerHTML = `
+                    <h4 style="margin:0 0 12px 0; font-size:14px; color:#333; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:5px; display:flex; justify-content:space-between;">
+                        ${genreInfo.name}
+                        <span style="font-size:10px; color:#666; font-weight:normal;">Weekly Top3</span>
+                    </h4>
+                    ${booksHtml}
+                `;
+                trendGrid.appendChild(card);
+            });
+
+        } catch (error) {
+            console.error("Trend load error:", error);
+            trendGrid.innerHTML = `<div style='grid-column: 1/-1; color:red;'>トレンドの読み込みに失敗しました: ${error.message}</div>`;
         }
     };
 
