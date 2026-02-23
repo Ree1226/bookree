@@ -366,7 +366,8 @@
         query, where, orderBy, limit, startAfter, getCountFromServer
     } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // ★重要：ご自身のFirebase Configが正しく設定されているか確認してください
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
     const firebaseConfig = {
             apiKey: "AIzaSyD8NPDFZcumM96ypgJOLSm5BA0I2wTBaKg",
             authDomain: "book-ree.firebaseapp.com",
@@ -378,25 +379,57 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
     // グローバル変数
     window.db = db;
     let lastDoc = null;
     let currentBooks = [];
 
-    // --- 認証機能 (簡易) ---
-    window.checkPass = () => {
-        const pass = document.getElementById("admin-pass").value;
-        if(pass === "admin123") { 
-            document.getElementById("login-overlay").style.display = "none";
-            document.getElementById("app").style.display = "block";
-            runSearch(); // 初期ロード
-            loadStats(); 
+    // --- ログイン状態を監視 ---
+    onAuthStateChanged(auth, (user) => {
+        const loginOverlay = document.getElementById("login-overlay");
+        const appElement = document.getElementById("app");
+
+        const adminEmail = "masaki2742@icloud.com";
+
+        if (user && user.email === adminEmail) {
+            // ログイン成功（管理者である）
+            loginOverlay.style.display = "none";
+            appElement.style.display = "block";
+            
+            // ログインに成功してからデータを読み込む
+            runSearch(); 
+            loadStats();
             loadInventoryStats();
             loadTrendBoard();
         } else {
-            document.getElementById("login-msg").textContent = "パスワードが違います";
+            // 未ログイン、または管理者ではない
+            loginOverlay.style.display = "block";
+            appElement.style.display = "none";
         }
+    });
+
+    // --- 4. ログイン実行関数 (ボタンから呼ばれる) ---
+    window.checkPass = () => {
+        const adminEmail = "masaki2742@icloud.com";
+        const pass = document.getElementById("admin-pass").value;
+
+        if (!pass) {
+            alert("パスワードを入力してください");
+            return;
+        }
+
+        // Firebaseの認証機能を使ってログイン
+        signInWithEmailAndPassword(auth, adminEmail, pass)
+            .then(() => {
+                console.log("ログイン成功");
+                // 成功後の表示切り替えは onAuthStateChanged が自動で行います
+            })
+            .catch((error) => {
+                console.error("ログインエラー:", error.code);
+                document.getElementById("login-msg").textContent = "パスワードが正しくありません";
+            });
     };
 
     // 画像URLを安全なHTTPSに変換する共通関数
