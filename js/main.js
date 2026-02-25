@@ -1230,6 +1230,7 @@ async function handleVote(book, points, cardElement, currentDisplayType = 'score
         await updateDoc(bookRef, {
             score: increment(scoreIncrement),
             raw_score: increment(rawIncrement),
+            lastUpdated: serverTimestamp()
         });
   
         try {            
@@ -1828,8 +1829,8 @@ function analyzeBookStructure(info) {
     if (fullText.includes("キャリア") || fullText.includes("転職")) subs.add("career");  
 
     // 趣味・実用  
-    if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子") || fullText.includes("キッチン")) subs.add("cooking");  
-    if (fullText.includes("育児") || fullText.includes("子育て")) subs.add("parenting");  
+    if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子") || fullText.includes("キッチン") || fullText.includes("食卓") || fullText.includes("おかず") || fullText.includes("おつまみ")) subs.add("cooking");  
+    if (fullText.includes("育児") || fullText.includes("子育て") || fullText.includes("離乳食")) subs.add("parenting");  
     if (fullText.includes("健康") || fullText.includes("ヨガ") || fullText.includes("筋トレ") || fullText.includes("フィットネス")) subs.add("health");
     if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア")) subs.add("beauty");  
     if (fullText.includes("マナー") || fullText.includes("冠婚葬祭") || fullText.includes("結婚式") || fullText.includes("葬式") || fullText.includes("法要") || fullText.includes("法事")) subs.add("manners");  

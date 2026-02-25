@@ -885,11 +885,9 @@
     window.saveBook = async () => {
         const id = document.getElementById("edit-id").value;
         
-        // --- 修正ポイント: ターゲットのチェックボックスから値を取得 ---
         const checkedTargets = document.querySelectorAll('input[name="target-check"]:checked');
         const selectedTargets = Array.from(checkedTargets).map(cb => cb.value);
         
-        // --- 修正ポイント: サブジャンルのチェックボックスから値を取得 ---
         const checkedSubGenres = document.querySelectorAll('input[name="subgenre-check"]:checked');
         const selectedSubGenres = Array.from(checkedSubGenres).map(cb => cb.value);
         
@@ -897,8 +895,8 @@
             title: document.getElementById("edit-title").value,
             authors: document.getElementById("edit-authors").value.split(",").map(s=>s.trim()),
             mainGenre: document.getElementById("edit-genre").value,
-            target: selectedTargets,      // 配列として格納
-            subGenres: selectedSubGenres, // 配列として格納
+            target: selectedTargets,
+            subGenres: selectedSubGenres,
             publishedYear: parseInt(document.getElementById("edit-publishedYear").value, 10) || null,
             score: parseInt(document.getElementById("edit-score").value, 10),
             image: getSecureImageUrl(document.getElementById("edit-image").value)
@@ -906,16 +904,16 @@
 
         if(confirm("変更を保存しますか？")) {
             try {
-                // Firestoreのドキュメントを更新
                 await updateDoc(doc(db, "books", id), newData);
                 
                 const bookIndex = currentBooks.findIndex(b => b.id === id);
                 if(bookIndex > -1) {
-                    // ローカルのデータを更新
                     currentBooks[bookIndex] = { ...currentBooks[bookIndex], ...newData };
                     const b = currentBooks[bookIndex];
 
-                    // --- 修正ポイント1: 日付文字列の生成（既存機能を維持） ---
+                    // 【追加】isExcluded をここで定義（エラーの直接原因）
+                    const isExcluded = b.isExcluded || false;
+
                     let dateStr = "未登録";
                     if (b.createdAt && typeof b.createdAt.toDate === 'function') {    
                         const d = b.createdAt.toDate();    
@@ -924,21 +922,25 @@
 
                     const tr = document.getElementById(`row-${id}`);
                     if(tr) {
+                        // 【追加】除外状態に応じて行のスタイルを更新
+                        if (isExcluded) {
+                            tr.classList.add("row-excluded");
+                        } else {
+                            tr.classList.remove("row-excluded");
+                        }
+
                         let img = getSecureImageUrl(b.image) || "https://via.placeholder.com/40x50?text=No";
                         
-                        // ターゲットのバッジ生成
                         let targetBadges = "";
                         if(b.target && Array.isArray(b.target)) {
                             targetBadges = b.target.map(t => `<span class="badge bg-target">${t}</span>`).join("");
                         }
 
-                        // サブジャンルのバッジ生成
                         let subBadges = "";
                         if(b.subGenres && Array.isArray(b.subGenres)) {
                             subBadges = b.subGenres.map(s => `<span class="badge bg-sub">${s}</span>`).join("");
                         }
 
-                        // --- 修正ポイント2: innerHTML の更新（既存の列構成を維持） ---
                         tr.innerHTML = `
                             <td><img src="${img}" class="thumb"></td>
                             <td>
@@ -977,7 +979,7 @@
                 }
 
                 alert("保存しました");
-                closeModal(); // モーダルを閉じる
+                closeModal();
 
             } catch(e) {
                 console.error(e);
