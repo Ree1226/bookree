@@ -1675,7 +1675,7 @@ function isLightNovel(info) {
 }
 
 // --- 追加：メインジャンルの優先度（カウントが同数の場合の決選投票用） ---
-const MAIN_GENRE_PRIORITY = ['literature', 'business', 'specialized', 'hobby', 'children', 'study'];
+const MAIN_GENRE_PRIORITY = ['literature', 'business', 'hobby', 'specialized', 'children', 'study'];
 
 function analyzeBookStructure(info) {
     const API_SUBGENRE_MAP = {
@@ -1832,9 +1832,9 @@ function analyzeBookStructure(info) {
     if (fullText.includes("料理") || fullText.includes("レシピ") || fullText.includes("献立") || fullText.includes("クッキング") || fullText.includes("お菓子") || fullText.includes("キッチン") || fullText.includes("食卓") || fullText.includes("おかず") || fullText.includes("おつまみ")) subs.add("cooking");  
     if (fullText.includes("育児") || fullText.includes("子育て") || fullText.includes("離乳食")) subs.add("parenting");  
     if (fullText.includes("健康") || fullText.includes("ヨガ") || fullText.includes("筋トレ") || fullText.includes("フィットネス")) subs.add("health");
-    if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア")) subs.add("beauty");  
-    if (fullText.includes("マナー") || fullText.includes("冠婚葬祭") || fullText.includes("結婚式") || fullText.includes("葬式") || fullText.includes("法要") || fullText.includes("法事")) subs.add("manners");  
-    if (fullText.includes("旅行") || fullText.includes("ガイド") || fullText.includes("観光") || fullText.includes("名所") || fullText.includes("パワースポット")) subs.add("travel");  
+    if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア") || fullText.includes("美肌")) subs.add("beauty");  
+    if (fullText.includes("マナー") || fullText.includes("冠婚葬祭") || fullText.includes("結婚式") || fullText.includes("葬式") || fullText.includes("法要") || fullText.includes("法事") || fullText.includes("葬儀")) subs.add("manners");  
+    if (fullText.includes("旅行") || fullText.includes("ガイド") || fullText.includes("観光") || fullText.includes("名所") || fullText.includes("パワースポット") || fullText.includes("世界遺産")) subs.add("travel");  
     if (fullText.includes("園芸") || fullText.includes("盆栽") || fullText.includes("植木") || fullText.includes("芝生") || fullText.includes("生花")) subs.add("gardening");
     if (fullText.includes("スポーツ") || fullText.includes("運動") || fullText.includes("野球") || fullText.includes("サッカー") || fullText.includes("テニス") || fullText.includes("ゴルフ") || fullText.includes("水泳") || fullText.includes("バスケ")) subs.add("sports");  
     if (fullText.includes("カメラ") || fullText.includes("一眼") || fullText.includes("写真") || fullText.includes("フォト")) subs.add("camera");  
