@@ -1771,7 +1771,6 @@ function analyzeBookStructure(info) {
     }
     else if (apiCats.includes("comics") || apiCats.includes("manga")) {
         main = "literature"; 
-        subs.add("manga"); 
     }
     else if (apiCats.includes("business") || apiCats.includes("economics")) {
         main = "business";
@@ -1835,8 +1834,8 @@ function analyzeBookStructure(info) {
     if (fullText.includes("美容") || fullText.includes("化粧") || fullText.includes("コスメ") || fullText.includes("スキンケア") || fullText.includes("美肌")) subs.add("beauty");  
     if (fullText.includes("マナー") || fullText.includes("冠婚葬祭") || fullText.includes("結婚式") || fullText.includes("葬式") || fullText.includes("法要") || fullText.includes("法事") || fullText.includes("葬儀")) subs.add("manners");  
     if (fullText.includes("旅行") || fullText.includes("ガイド") || fullText.includes("観光") || fullText.includes("名所") || fullText.includes("パワースポット") || fullText.includes("世界遺産")) subs.add("travel");  
-    if (fullText.includes("園芸") || fullText.includes("盆栽") || fullText.includes("植木") || fullText.includes("芝生") || fullText.includes("生花")) subs.add("gardening");
-    if (fullText.includes("スポーツ") || fullText.includes("運動") || fullText.includes("野球") || fullText.includes("サッカー") || fullText.includes("テニス") || fullText.includes("ゴルフ") || fullText.includes("水泳") || fullText.includes("バスケ")) subs.add("sports");  
+    if (fullText.includes("園芸") || fullText.includes("盆栽") || fullText.includes("植木") || fullText.includes("芝生") || fullText.includes("生花")  || fullText.includes("いけばな") || fullText.includes("ガーデニング") || fullText.includes("庭づくり") || fullText.includes("華道")) subs.add("gardening");
+    if (fullText.includes("スポーツ") || fullText.includes("運動") || fullText.includes("野球")  || fullText.includes("大谷翔平") || fullText.includes("サッカー") || fullText.includes("テニス") || fullText.includes("ゴルフ") || fullText.includes("水泳") || fullText.includes("バスケ")) subs.add("sports");  
     if (fullText.includes("カメラ") || fullText.includes("一眼") || fullText.includes("写真") || fullText.includes("フォト")) subs.add("camera");  
     if (fullText.includes("鉄道") || fullText.includes("撮り鉄")) subs.add("railway");  
     if (fullText.includes("将棋") || fullText.includes("囲碁") || fullText.includes("チェス") || fullText.includes("麻雀") || fullText.includes("飛車")) subs.add("igo_shogi");  
@@ -2078,7 +2077,7 @@ async function loadFeaturedBook() {
             const searchQuery = `${book.title} ${firstAuthor}`.trim();
 
             section.innerHTML = `
-                <div class="featured-label">★ 今月のピックアップ</div>
+                <div class="featured-label">★ 今週のピックアップ</div>
                 <div style="display: flex; gap: 20px; align-items: flex-start; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
                     <div style="flex-shrink: 0; width: 100px;">
                         <img src="${displayImg}" alt="${book.title}" 
