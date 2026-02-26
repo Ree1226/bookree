@@ -78,11 +78,12 @@
 </head>
 <body>
 
-<!-- 簡易ログイン -->
+<!-- ログイン -->
 <div id="login-overlay">
     <div style="color:white; font-size:24px; margin-bottom:20px; font-weight:bold;">BookRee Admin Master</div>
     <div id="login-box">
-        <p>パスワードを入力してください</p>
+        <p>管理者情報を入力してください</p>
+        <input type="email" id="admin-email" placeholder="Email Address">
         <input type="password" id="admin-pass" placeholder="Password">
         <button onclick="checkPass()">ログイン</button>
         <p id="login-msg" style="color:red; margin-top:10px; font-size:12px;"></p>
@@ -391,10 +392,9 @@
         const loginOverlay = document.getElementById("login-overlay");
         const appElement = document.getElementById("app");
 
-        const adminEmail = "masaki2742@icloud.com";
-
-        if (user && user.email === adminEmail) {
-            // ログイン成功（管理者である）
+        // 特定のメールアドレスチェックを削除し、「ログインしているか」だけで判定
+        if (user) {
+            // ログイン成功
             loginOverlay.style.display = "none";
             appElement.style.display = "block";
             
@@ -404,31 +404,31 @@
             loadInventoryStats();
             loadTrendBoard();
         } else {
-            // 未ログイン、または管理者ではない
-            loginOverlay.style.display = "block";
+            // 未ログイン
+            loginOverlay.style.display = "flex"; // flexに戻す
             appElement.style.display = "none";
         }
     });
 
-    // --- 4. ログイン実行関数 (ボタンから呼ばれる) ---
+    // --- ログイン実行関数 ---
     window.checkPass = () => {
-        const adminEmail = "masaki2742@icloud.com";
+        // 入力フォームからメールアドレスとパスワードを取得
+        const email = document.getElementById("admin-email").value;
         const pass = document.getElementById("admin-pass").value;
 
-        if (!pass) {
-            alert("パスワードを入力してください");
+        if (!email || !pass) {
+            alert("メールアドレスとパスワードを入力してください");
             return;
         }
 
         // Firebaseの認証機能を使ってログイン
-        signInWithEmailAndPassword(auth, adminEmail, pass)
+        signInWithEmailAndPassword(auth, email, pass)
             .then(() => {
                 console.log("ログイン成功");
-                // 成功後の表示切り替えは onAuthStateChanged が自動で行います
             })
             .catch((error) => {
                 console.error("ログインエラー:", error.code);
-                document.getElementById("login-msg").textContent = "パスワードが正しくありません";
+                document.getElementById("login-msg").textContent = "認証に失敗しました。入力内容を確認してください。";
             });
     };
 
