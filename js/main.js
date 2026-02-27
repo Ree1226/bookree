@@ -1003,12 +1003,10 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
     isWebSearching[genreId] = true;
     const container = document.getElementById(`list-${genreId}`);
     
-    // 新規検索の場合はインデックスをリセットし、画面をクリア
     if (!isLoadMore) {
         searchIndices[genreId] = 0;
         container.innerHTML = `<p style="padding:20px; text-align:center; width:100%;">🔍 検索中...</p>`;
     } else {
-        // 「もっと見る」ボタンを一時的に無効化
         const oldBtn = container.querySelector('.search-load-more-btn');
         if (oldBtn) {
             oldBtn.textContent = "読み込み中...";
@@ -1018,27 +1016,40 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
 
     try {
         const startIndex = searchIndices[genreId] || 0;
-        const apiKey = "AIzaSyCL88yBdIcEZIh_Zrw-NOmy-QtRCNB0cns"; // 既存のキーを使用
+        const apiKey = "AIzaSyCL88yBdIcEZIh_Zrw-NOmy-QtRCNB0cns"; 
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&langRestrict=ja&maxResults=20&startIndex=${startIndex}&maxAllowedMaturityRating=not-mature&key=${apiKey}`);        
-        const data = await res.json();
 
-        // --- ここに追加 ---
-        console.log("Google Books APIから届いたデータ:", data.items);
-        if (data.items && data.items.length > 0) {
-            console.log("1冊目の詳細情報 (volumeInfo):", data.items[0].volumeInfo);
+        // 【修正ポイント1】レスポンスが正常（200 OK）でない場合の処理
+        if (!res.ok) {
+            console.error("API Response Error:", res.status);
+            if (!isLoadMore) {
+                container.innerHTML = `
+                    <p style="padding:20px; color:#e67e22; text-align:center; width:100%; line-height:1.6;">
+                        現在、検索サーバーが混み合っています。<br>
+                        恐れ入りますが、少し時間を置いてから再度お試しください。
+                    </p>`;
+            } else {
+                const oldBtn = container.querySelector('.search-load-more-btn');
+                if (oldBtn) {
+                    oldBtn.textContent = "混雑のため失敗。もう一度試す";
+                    oldBtn.disabled = false;
+                }
+            }
+            return;
         }
-        // -----------------
+
+        const data = await res.json();
 
         // 新規検索なら一旦クリア
         if (!isLoadMore) container.innerHTML = ""; 
         
-        // 古い「もっと見る」ボタンを削除
         const oldBtn = container.querySelector('.search-load-more-btn');
         if (oldBtn) oldBtn.remove();
 
+        // 【修正ポイント2】データが空（検索結果ゼロ）の場合の処理
         if (!data.items || data.items.length === 0) {
             if (!isLoadMore) {
-                container.innerHTML = `<p style="padding:20px; color:#999; text-align:center; width:100%;">見つかりませんでした。</p>`;
+                container.innerHTML = `<p style="padding:20px; color:#999; text-align:center; width:100%;">該当する本が見つかりませんでした。</p>`;
             }
             return;
         }
@@ -1053,22 +1064,19 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
             }
         });
 
-        // インデックスを更新（次は20件目から取得）
         searchIndices[genreId] = startIndex + 20;
 
-        // 次の20件がある場合は「もっと見る」ボタンを追加
         if (data.items.length === 20) {
             const loadMoreBtn = document.createElement("button");
             loadMoreBtn.className = "search-load-more-btn";
             loadMoreBtn.textContent = "もっと見る (Webからさらに検索)";
             
-            // デザインを既存の「もっと見る」ボタンと統一
             loadMoreBtn.style.cssText = `
                 display: block;
                 margin: 30px auto 10px;
                 padding: 12px 50px;
                 background-color: #fff;
-                color: #e67e22;              /* 検索結果なのでオレンジ系に */
+                color: #e67e22;
                 border: 2px solid #e67e22;
                 border-radius: 30px;
                 cursor: pointer;
@@ -1096,8 +1104,16 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
     } catch (err) {
         console.error(err);
         if (!isLoadMore) {
-            container.innerHTML = `<p style="padding:20px; color:red; text-align:center; width:100%;">エラーが発生しました。</p>`;
+            container.innerHTML = `<p style="padding:20px; color:red; text-align:center; width:100%;">通信エラーが発生しました。接続状況を確認してください。</p>`;
+        }else {            
+            const oldBtn = container.querySelector('.search-load-more-btn');            
+            if (oldBtn) {                
+                oldBtn.textContent = "通信エラー。もう一度試す";                
+                oldBtn.disabled = false;            
+            }        
         }
+    } finally {
+        isWebSearching[genreId] = false;
     }
 }
 
