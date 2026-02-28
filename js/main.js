@@ -1623,7 +1623,7 @@ const SUB_TO_MAIN_MAP = {
 
     // 専門書 (specialized)
     "humanities": "specialized", "social_science": "specialized", "science_tech": "specialized",
-    "medical": "specialized", "art": "specialized", "language": "specialized", "license": "specialized",
+    "medical": "specialized", "art": "specialized", "language": "specialized",
 
     // 児童書 (children)
     "picturebook": "children", "fairytale": "children", "nonfiction": "children", "biography": "children",
@@ -1735,7 +1735,6 @@ function analyzeBookStructure(info) {
         "medical": "medical", "medicine": "medical",
         "art": "art", "design": "art",
         "language arts & disciplines": "language", "foreign language": "language",
-        "study aids": "license", // 資格・試験
 
         // ■ 児童書 (Children)
         "juvenile nonfiction": "nonfiction",
@@ -1854,27 +1853,27 @@ function analyzeBookStructure(info) {
     if (fullText.includes("スポーツ") || fullText.includes("運動") || fullText.includes("野球")  || fullText.includes("大谷翔平") || fullText.includes("サッカー") || fullText.includes("テニス") || fullText.includes("ゴルフ") || fullText.includes("水泳") || fullText.includes("バスケ")) subs.add("sports");  
     if (fullText.includes("カメラ") || fullText.includes("一眼") || fullText.includes("写真") || fullText.includes("フォト")) subs.add("camera");  
     if (fullText.includes("鉄道") || fullText.includes("撮り鉄")) subs.add("railway");  
-    if (fullText.includes("将棋") || fullText.includes("囲碁") || fullText.includes("チェス") || fullText.includes("麻雀") || fullText.includes("飛車")) subs.add("igo_shogi");  
+    if (fullText.includes("将棋") || fullText.includes("囲碁") || fullText.includes("チェス") || fullText.includes("麻雀") || fullText.includes("飛車") || fullText.includes("手詰")) subs.add("igo_shogi");  
 
     // 専門書  
-    if (fullText.includes("人文") || fullText.includes("哲学") || fullText.includes("心理") || fullText.includes("倫理")) subs.add("humanities");  
-    if (fullText.includes("社会科学")) subs.add("social_science");  
+    if (fullText.includes("人文") || fullText.includes("哲学") || fullText.includes("心理") || fullText.includes("倫理") || fullText.includes("社会学") || fullText.includes("カント") || fullText.includes("ソクラテス")) subs.add("humanities");  
+    if (fullText.includes("社会科学") || fullText.includes("社会学")) subs.add("social_science");  
     if (fullText.includes("理工") || fullText.includes("科学技術") || fullText.includes("機械") || fullText.includes("建築")) subs.add("science_tech");  
     if (fullText.includes("医学") || fullText.includes("看護") || fullText.includes("医療")) subs.add("medical");  
-    if (fullText.includes("芸術") || fullText.includes("デザイン") || fullText.includes("アート")) subs.add("art");  
-    if (fullText.includes("語学") || fullText.includes("英語")) subs.add("language");  
-    if (fullText.includes("資格") || fullText.includes("検定")) subs.add("license");  
+    if (fullText.includes("芸術") || fullText.includes("デザイン") || fullText.includes("アート") || fullText.includes("美術")) subs.add("art");  
+    if (fullText.includes("語学") || fullText.includes("英語") || fullText.includes("外国語")) subs.add("language");  
+    // if (fullText.includes("資格") || fullText.includes("検定")) subs.add("license");  
 
     // 児童書  
     if (fullText.includes("絵本") || fullText.includes("えほん")) subs.add("picturebook");
-    if (fullText.includes("童話") || fullText.includes("どうわ")) subs.add("fairytale");
-    if (fullText.includes("ファンタジー")) subs.add("fantasy");
-    if (fullText.includes("SF") || fullText.includes("エスエフ")) subs.add("sf");
+    if (fullText.includes("童話") || fullText.includes("どうわ") || fullText.includes("寓話") || fullText.includes("イソップ物語")) subs.add("fairytale");
+    if (fullText.includes("ファンタジー") || fullText.includes("マジック・ツリーハウス") || fullText.includes("かいけつゾロリ")) subs.add("fantasy");
+    if (fullText.includes("SF") || fullText.includes("エスエフ") || fullText.includes("マジック・ツリーハウス")) subs.add("sf");
     if (fullText.includes("ミステリー")) subs.add("mystery");  
     if (fullText.includes("歴史") || fullText.includes("れきし")) subs.add("history");  
     if (fullText.includes("ノンフィクション")) subs.add("nonfiction");  
     if (fullText.includes("詩") || fullText.includes("ポエム")) subs.add("poem");  
-    if (fullText.includes("伝記")) subs.add("biography");  
+    if (fullText.includes("伝記") || fullText.includes("偉人伝")) subs.add("biography");  
     if (fullText.includes("学習まんが")) subs.add("study_manga");  
     if (fullText.includes("図鑑") || fullText.includes("ずかん")) subs.add("zukan");  
 
