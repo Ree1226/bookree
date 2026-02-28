@@ -75,32 +75,36 @@ body {
     color: rgba(255,255,255,0.9);
 }
 
-/* --- スマホ対応（768px以下） --- */
-@media (max-width: 768px) {
+/* --- スマホ・タブレット対応（1024px以下で適用） --- */
+@media (max-width: 1024px) {
     .header-content {
         flex-direction: column; /* 縦並びに変更 */
-        padding: 10px 0;
+        padding: 15px 0;
+        min-height: auto; /* 高さを自動調整 */
     }
     
-    /* ロゴの固定を解除して上に表示 */
+    /* ロゴの固定を解除して中央に表示 */
     .header-left {
         position: static; 
         transform: none;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         text-align: center;
     }
     
-    /* ロゴサイズをスマホ用に少し調整 */
+    /* ロゴサイズをタブレット・スマホ用に調整 */
     .brand-logo {
-        font-size: 3rem;
+        font-size: 3rem; /* 3.5remから少し小さく */
     }
     
-    /* 文字サイズ調整 */
+    /* 中央テキストの余白調整 */
+    .header-center {
+        text-align: center;
+    }
     .header-center h1 {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
     }
     .header-center p {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
     }
 }
 
@@ -542,18 +546,17 @@ h2 {
     margin-bottom: 10px;
 }
 
-/* レスポンシブ */
-@media (max-width: 768px) {
-    header { padding: 40px 15px; }
-    .brand-logo { font-size: 2.5rem; display: block; margin-right: 0; margin-bottom: 5px; }
-    .site-subtitle { font-size: 1rem; display: block; }
-    .sp-only { display: inline; }
+/* レスポンシブ（タブレット・スマホ共通） */
+@media (max-width: 1024px) {
+    header { padding: 20px 15px; } /* 余白を少し詰める */
     
-    .genre-section { padding: 15px; }
+    .genre-section { padding: 20px; }
     .genre-top-area { flex-direction: column; }
     .genre-controls { flex-direction: column; }
     .control-group { flex-basis: 100%; }
-    .book-card { min-width: 85vw; max-width: 85vw; }
+    
+    /* iPadではカードを少し見やすく（スマホ用の140px設定は768px以下のまま維持） */
+    .book-card { min-width: 180px; max-width: 180px; }
 }
 
 /* 検索ボタンが無効化された時のスタイル */
