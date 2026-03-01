@@ -1176,7 +1176,7 @@ function createExternalBookCard(item) {
         <a href="${amazonUrl}" 
             target="_blank" 
             rel="noopener noreferrer" 
-            class="amazon-link-btn" 
+            class="amazon-link-btn"> 
             Amazonで見る
         </a>
      
