@@ -703,7 +703,10 @@ function filterByText(genreId, books) {
 }
 
 // 1. NGワードリストの定義（適宜追加してください）
-const BANNED_KEYWORDS = ["不適切ワード1", "不適切ワード2"]; 
+const BANNED_KEYWORDS = ["セックス", "sex", "アダルト", "18禁", "エロ", 
+"ポルノ", "裏ビデオ", "ヌード", "性的", "陵辱", "拷問", "殺害", "自殺", 
+"麻薬", "覚醒剤"
+]; 
 
 // 2. 判定関数の定義
 function isSafeText(text) {
