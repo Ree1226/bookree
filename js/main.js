@@ -934,7 +934,8 @@ function updateChart(genreId, books) {
     // 検索用に先頭の著者のみを抽出（表示用は authorText をそのまま使用）
     const firstAuthor = (book.authors && book.authors.length > 0) ? book.authors[0] : (book.author || "");
     const searchQuery = `${book.title} ${firstAuthor}`;
-    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}`;
+    const associateId = 'bookree-22';
+    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}&tag=${associateId}`;
     const isVoted = localStorage.getItem(`voted_${book.id}`);
   
     let rankHtml = '';
@@ -961,8 +962,14 @@ function updateChart(genreId, books) {
             </div>
         </div>
         
-        <a href="${amazonUrl}" target="_blank" class="amazon-link-btn" onclick="trackClick('${book.id}')">Amazonで見る</a>
-  
+        <a href="${amazonUrl}" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="amazon-link-btn" 
+            onclick="trackClick('${book.id}')">
+            Amazonで見る
+        </a>
+       
         <div class="rating-area">
             ${isVoted ? 
                // ▼▼▼ 修正: white-space:nowrap で改行を禁止し、gapを狭めてスマホに収める ▼▼▼
@@ -1151,7 +1158,8 @@ function createExternalBookCard(item) {
     // Amazon検索用
     const firstAuthor = (info.authors && info.authors.length > 0) ? info.authors[0] : "";
     const searchQuery = `${title} ${firstAuthor}`;
-    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}`;
+    const associateId = 'bookree-22';
+    const amazonUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}&tag=${associateId}`;
     const isVoted = localStorage.getItem(`voted_${item.id}`);
 
     // HTML構造をランキング用カードと統一
@@ -1165,8 +1173,13 @@ function createExternalBookCard(item) {
         </div>
         
         <!-- Amazonボタンを info の外に出してフル幅に -->
-        <a href="${amazonUrl}" target="_blank" class="amazon-link-btn">Amazonで見る</a>
-
+        <a href="${amazonUrl}" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="amazon-link-btn" 
+            Amazonで見る
+        </a>
+     
         <div class="rating-area">
             ${isVoted ? 
                `<div style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
@@ -2104,10 +2117,12 @@ async function loadFeaturedBook() {
                         <p style="margin: 0 0 15px 0; font-size: 15px; color: #666;">
                             ${book.authors ? book.authors.join(", ") : "著者不明"}
                         </p>
-                        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}" target="_blank"
-                           onclick="trackClick('${bookId}')"
-                           style="background: #27ae60; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: bold; display: inline-block;">
-                           Amazonで見る ↗
+                        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(searchQuery.trim())}&tag=bookree-22" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onclick="trackClick('${bookId}')"
+                        style="background: #27ae60; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: bold; display: inline-block;">
+                        Amazonで見る ↗
                         </a>
                     </div>
                 </div>
