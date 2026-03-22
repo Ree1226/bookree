@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- メインページ（BookRee） -->
   <url>
-    <loc>https://ree1226.github.io/BookRee/</loc>
-    <lastmod>2026-03-03</lastmod>
+    <loc>https://ree-series.jp/bookree/</loc>
+    <lastmod>2026-03-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  <!-- お問い合わせページ -->
   <url>
-    <loc>https://ree1226.github.io/BookRee/contact.html</loc>
-    <lastmod>2026-03-03</lastmod>
+    <loc>https://ree-series.jp/bookree/contact.html</loc>
+    <lastmod>2026-03-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
