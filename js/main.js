@@ -977,7 +977,7 @@ function updateChart(genreId, books) {
             ${isVoted ? 
                // ▼▼▼ 修正: white-space:nowrap で改行を禁止し、gapを狭めてスマホに収める ▼▼▼
                `<div style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0; flex-wrap:nowrap;">
-                    <span style="color:#27ae60; background:#eafaf1; border:1px solid #27ae60; font-weight:bold; padding:4px 8px; border-radius:20px; font-size:11px; display:flex; align-items:center; gap:2px; white-space:nowrap; flex-shrink: 0;">
+                    <span class="voted-container" style="color:#27ae60; background:#eafaf1; border:1px solid #27ae60; font-weight:bold; padding:4px 8px; border-radius:20px; font-size:11px; display:flex; align-items:center; gap:2px; white-space:nowrap; flex-shrink: 0;">
                       ✔ 投票済
                     </span>
                     <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" 
@@ -1185,7 +1185,7 @@ function createExternalBookCard(item) {
      
         <div class="rating-area">
             ${isVoted ? 
-               `<div style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
+               `<div class="voted-container" style="display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
                     <span style="color:#27ae60; background:#eafaf1; border:1px solid #27ae60; font-weight:bold; padding:4px 8px; border-radius:20px; font-size:11px;">
                       ✔ 投票済
                     </span>
@@ -1227,13 +1227,13 @@ async function handleVote(book, points, cardElement, currentDisplayType = 'score
         if (ratingArea) {
             // ▼▼▼ 修正: テキストだけでなく、シェアボタンも横に並べて表示 ▼▼▼
             ratingArea.innerHTML = `
-              <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 0;">
-                  <span style="color:#7f8c8d; font-weight:bold;">投票済み (+${points})</span>
-                  <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" 
-                     style="background-color:#000; color:#fff; text-decoration:none; padding:4px 10px; border-radius:15px; font-size:11px; display:flex; align-items:center; gap:4px; transition: opacity 0.3s;">
-                     <span style="font-style:normal; font-weight:bold;">𝕏</span> でシェア
-                  </a>
-              </div>`;
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 0;">
+                <span class="voted-text-mobile" style="color:#7f8c8d; font-weight:bold;">投票済み (+${points})</span>
+                <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" 
+                style="background-color:#000; color:#fff; text-decoration:none; padding:4px 10px; border-radius:15px; font-size:11px; display:flex; align-items:center; gap:4px; transition: opacity 0.3s;">
+                <span style="font-style:normal; font-weight:bold;">𝕏</span> でシェア
+                </a>
+            </div>`;        
         }
         
         const scoreSpan = cardElement.querySelector(".current-score");
@@ -1402,7 +1402,7 @@ async function voteForNewBook(book, points, cardElement) {
         const msg = isBonus ? `Thanks! (+${weightedPoints}) 🏆` : `Thanks! (+${rawPoints})`;
         ratingArea.innerHTML = `
             <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 0;">
-                <span style="color:#e67e22; font-weight:bold;">${msg}</span>
+                <span class="voted-text-mobile" style="color:#e67e22; font-weight:bold;">${msg}</span>
                 <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" 
                    style="background-color:#000; color:#fff; text-decoration:none; padding:4px 10px; border-radius:15px; font-size:11px; display:flex; align-items:center; gap:4px;">
                    <span style="font-style:normal; font-weight:bold;">𝕏</span> でシェア

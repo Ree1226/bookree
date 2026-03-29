@@ -751,3 +751,247 @@ h2 {
         width: 80%; /* スマホではボタンを少し広めに */
     }
 }
+
+/* ===== セクション見出しに高級感（明朝体）を持たせる ===== */
+.genre-section h2 {
+    font-family: 'Noto Serif JP', "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif !important;
+    font-weight: 700;
+    letter-spacing: 0.0em; /* 文字と文字の隙間を少し開けると、より上品な抜け感が出ます */
+}
+
+/* ===== スマホ用レイアウト調整（画面幅が768px以下の場合） ===== */
+@media screen and (max-width: 768px) {
+/* 1. グラフエリアと、表示数・ランキング基準プルダウンを非表示 */
+    .chart-wrapper {
+        display: none !important;
+    }
+    .genre-controls .control-group:first-child,
+    .genre-controls .control-group:nth-child(2) {
+        display: none !important;
+    }
+    /* 2. 操作パネル全体を幅100%にし、隙間を極限まで詰める */
+    .genre-controls {
+        width: 100%;
+        margin-left: 0 !important;
+        gap: 4px !important; /* フレックス時の隙間を最小化 */
+    }
+    .genre-top-area {
+        flex-direction: column;
+    }
+
+    /* 3. 各項目の外側の余白を最小限に */
+    .control-group {
+        margin-bottom: 4px !important; /* グループ間の縦の隙間を削る */
+    }
+    
+    /* ラベル（見出し文字）をさらに小さく、余白もゼロ近くに */
+    .control-group label {
+        font-size: 11px !important; 
+        margin-bottom: 2px !important; 
+        line-height: 1.2 !important;
+    }
+
+    /* 4. プルダウン・検索入力欄・検索ボタンの高さを完全に統一し極小化 */
+    .form-select, 
+    .form-input, 
+    .search-btn {
+        padding: 2px 8px !important; /* 内側の余白を限界まで削る */
+        font-size: 13px !important;  /* 文字サイズを少し小さく */
+        height: 32px !important;     /* 高さを32pxにピタッと強制統一 */
+        line-height: 1.5 !important;
+        box-sizing: border-box !important; /* 枠線を含めた高さ計算に統一 */
+        margin: 0 !important;
+    }
+
+    /* 検索ボタンの文字がズレないための微調整 */
+    .search-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* 5. 【修正：ちょうど良い余白】操作パネルとカード一覧の間にわずかな余白を作る */
+    .genre-top-area, 
+    .genre-controls {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    
+    .genre-books-area {
+        margin-top: 12px !important; /* ←ここにわずかに余白を追加 */
+        padding-top: 0 !important;
+    }
+
+    /* 6. 【新規追加】順位マークをスマホ用に小さく、位置を微調整 */
+    .rank-badge {
+        width: 22px !important;   /* 幅を小さく */
+        height: 22px !important;  /* 高さを小さく */
+        font-size: 11px !important; /* 数字も小さく */
+        top: 2px !important;      /* 位置を少し下に下げる */
+        left: 2px !important;     /* 位置を少し右に寄せる */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* 影も薄く */
+    }
+
+    /* 7. 【新規追加】セクション見出しと操作パネルの間の余白を詰める */
+    .genre-section h2 {
+        margin-bottom: 6px !important; /* 見出しの下の余白を限界まで削る */
+        padding-bottom: 0 !important;
+    }
+    
+    .genre-top-area {
+        margin-top: 0 !important; /* パネルの上の余白を無くす */
+    }
+
+    /* 8. 【新規追加】ヘッダーとメインコンテンツの間の余白を詰める */
+    header, 
+    .header-content {
+        padding-bottom: 8px !important; /* ヘッダーの下の余白を削る */
+        margin-bottom: 0 !important;
+    }
+    
+    main {
+        padding-top: 8px !important; /* メインエリアの上の余白を削る */
+    }
+    
+    .genre-section {
+        margin-top: 0 !important; /* セクションの上の余白を削る */
+        padding-top: 0 !important;
+    }
+
+    /* 9. 【新規追加】各セクション同士（最新トレンドと文芸など）の間の余白を詰める */
+    .genre-section {
+        margin-bottom: 16px !important; /* セクションの下の余白をギュッと縮小 */
+    }
+
+    /* 10. 【新規追加】セクション内側（上下）の余白と、見出しの上の隙間を詰める */
+    .genre-section {
+        padding: 8px !important; /* 白枠内の余白（上下左右）を小さく統一 */
+    }
+    
+    .genre-section h2 {
+        margin-top: 0 !important; /* 見出し文字の上の不要な隙間を無くす */
+    }
+
+    /* 11. 【修正：右側のはみ出し防止】幅の計算ルールを統一し、枠内に収める */
+    .genre-section,
+    .genre-section *,
+    .genre-top-area,
+    .genre-controls,
+    .form-select,
+    .form-input {
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+    }
+
+    /* プルダウンの横幅を親要素にぴったり合わせる */
+    .form-select {
+        width: 100% !important;
+    }
+
+    /* 12. 【新規追加】カードとカードの間の余白を詰める */
+    .genre-books-area {
+        gap: 0px !important; /* グリッド配置の場合の隙間を縮小 */
+    }
+    
+    .book-item {
+        margin-bottom: 8px !important; /* マージン配置の場合の隙間を縮小 */
+    }
+
+    /* 最後のカードの下には無駄な余白を作らない */
+    .book-item:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    /* 13. 【新規追加】操作パネル（プルダウン・検索領域）の上部余白を詰める */
+    .genre-controls {
+        margin-top: 0 !important;
+        padding-top: 0.5 !important;
+    }
+
+    /* 14. 【新規追加】スマホ版ではセクション見出しの下線を非表示にする */
+    .genre-section h2 {
+        border-bottom: none !important; /* 下線を消去 */
+    }
+
+    /* 15. 【新規追加】カード下部（点数ボタン・シェアボタン周辺）の上下余白を詰める */
+    .rating-area {
+        margin-top: 0px !important; /* 点数ボタンの上の余白を削る */
+        margin-bottom: 0px !important; /* 点数ボタンの下の余白を削る */
+    }
+
+    .share-btn,
+    .tweet-btn,
+    .twitter-share-button {
+        margin-top: 0px !important; /* シェアボタンの上の余白を削る */
+        margin-bottom: 0 !important; /* シェアボタンの下の余白を削る */
+    }
+
+    /* カード自体（白い枠）の内側下部パディングを詰める */
+    .book-item {
+        padding-bottom: 0px !important; 
+    }
+
+    /* 16. 【横スクロール用レイアウト】縦1列（画像→タイトル→著者→スコア）にし、横幅を狭くする */
+    .book-item {
+        display: grid !important;
+        width: 116px !important; /* ★ここでカードの横幅を細く固定しています */
+        flex-shrink: 0 !important; /* 横スクロール時にカードが潰れるのを防ぐ */
+        grid-template-columns: 1fr !important; /* 2列から1列に変更 */
+        grid-template-areas: 
+            "cover"
+            "title"
+            "author"
+            "score" !important;
+        gap: 4px !important; /* 縦の隙間 */
+        align-items: start !important;
+    }
+
+    /* .book-infoの箱を"透明化"して、中身を直接グリッドに配置する魔法の指定 */
+    .book-info {
+        display: contents !important;
+    }
+
+    /* ① 画像の配置（一番上） */
+    .book-cover {
+        grid-area: cover !important;
+        width: 100% !important; /* 116pxの枠にピッタリ収める */
+        height: auto !important;
+        margin: 0 !important;
+    }
+
+    /* ② タイトルの配置（画像の下） */
+    .book-title {
+        grid-area: title !important;
+        white-space: normal !important; /* 折り返して表示 */
+        line-height: 1.3 !important;
+        margin-top: 4px !important;
+        font-size: 13px !important; /* 細い横幅に合わせて少し調整 */
+        
+        /* 横スクロールで高さがガタガタにならないよう、最大3行で「...」と省略する処理 */
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+    }
+
+    /* ③ 著者名の配置（タイトルの下） */
+    .book-author-text {
+        grid-area: author !important;
+        margin-top: 0 !important;
+        margin-bottom: 2px !important;
+        font-size: 11px !important; /* 少し小さく */
+        color: #666 !important;
+    }
+
+    /* ④ スコアの配置（著者の下） */
+    .movie-score {
+        grid-area: score !important;
+        font-size: 13px !important; 
+        margin: 0 !important;
+    }
+
+    /* 17. 【修正】スマホ版では「投票済み (+〇点)」のテキストのみ非表示にする */
+    .voted-container,
+    .voted-text-mobile {
+    display: none !important;
+}}
