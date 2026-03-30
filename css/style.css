@@ -761,7 +761,7 @@ h2 {
 
 /* ===== スマホ用レイアウト調整（画面幅が768px以下の場合） ===== */
 @media screen and (max-width: 768px) {
-/* 1. グラフエリアと、表示数・ランキング基準プルダウンを非表示 */
+    /* 1. グラフエリアと、表示数・ランキング基準プルダウンを非表示 */
     .chart-wrapper {
         display: none !important;
     }
@@ -769,6 +769,7 @@ h2 {
     .genre-controls .control-group:nth-child(2) {
         display: none !important;
     }
+    
     /* 2. 操作パネル全体を幅100%にし、隙間を極限まで詰める */
     .genre-controls {
         width: 100%;
@@ -905,7 +906,7 @@ h2 {
     /* 13. 【新規追加】操作パネル（プルダウン・検索領域）の上部余白を詰める */
     .genre-controls {
         margin-top: 0 !important;
-        padding-top: 0.5 !important;
+        padding-top: 0 !important;
     }
 
     /* 14. 【新規追加】スマホ版ではセクション見出しの下線を非表示にする */
@@ -993,5 +994,11 @@ h2 {
     /* 17. 【修正】スマホ版では「投票済み (+〇点)」のテキストのみ非表示にする */
     .voted-container,
     .voted-text-mobile {
-    display: none !important;
-}}
+        display: none !important;
+    } /* ←★ここが抜けていました！ */
+
+    /* 19. 【新規追加】スマホ版では「最新トレンド」セクションの操作パネル全体を非表示にする（BookRee用） */
+    #section-2026 .genre-top-area {
+        display: none !important;
+    }
+} /* ←@media自体の閉じカッコ */
