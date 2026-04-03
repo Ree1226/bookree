@@ -780,16 +780,26 @@ h2 {
         flex-direction: column;
     }
 
-    /* 3. 各項目の外側の余白を最小限に */
+    /* 3. 【修正】ラベル（ジャンル・検索）と入力欄を横並びにする */
     .control-group {
-        margin-bottom: 4px !important; /* グループ間の縦の隙間を削る */
+        display: flex !important;
+        align-items: center !important; /* 縦の中央で揃える */
+        margin-bottom: 6px !important; /* 項目同士の縦の隙間 */
+        gap: 8px !important; /* ラベルと入力欄の横の隙間 */
     }
-    
-    /* ラベル（見出し文字）をさらに小さく、余白もゼロ近くに */
+
     .control-group label {
-        font-size: 11px !important; 
-        margin-bottom: 2px !important; 
-        line-height: 1.2 !important;
+        font-size: 12px !important; 
+        margin-bottom: 0 !important; /* 縦並びだった時の余白を消す */
+        white-space: nowrap !important; /* 文字が縦に折り返されるのを防ぐ */
+        width: 50px !important; /* ★幅を固定して、右側のプルダウンと検索枠の開始位置をピタッと揃える */
+    }
+
+    /* プルダウンと検索枠が残りの横幅をいっぱいに使うようにする */
+    .form-select,
+    .search-box-wrapper {
+        flex: 1 !important;
+        width: 100% !important;
     }
 
     /* 4. プルダウン・検索入力欄・検索ボタンの高さを完全に統一し極小化 */
@@ -906,7 +916,7 @@ h2 {
     /* 13. 【新規追加】操作パネル（プルダウン・検索領域）の上部余白を詰める */
     .genre-controls {
         margin-top: 0 !important;
-        padding-top: 0 !important;
+        padding-top: 1 !important;
     }
 
     /* 14. 【新規追加】スマホ版ではセクション見出しの下線を非表示にする */
@@ -997,8 +1007,4 @@ h2 {
         display: none !important;
     } /* ←★ここが抜けていました！ */
 
-    /* 19. 【新規追加】スマホ版では「最新トレンド」セクションの操作パネル全体を非表示にする（BookRee用） */
-    #section-2026 .genre-top-area {
-        display: none !important;
-    }
-} /* ←@media自体の閉じカッコ */
+}
