@@ -9,7 +9,7 @@
                 window.location.replace("https://ree-series.jp/bookree/");
             }
         </script>
-        
+
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="google-site-verification" content="R3XwKSq_XieZsOsJzyj0HbOXttau0zDn-SJl0Fqf5B0" />
 
@@ -421,9 +421,8 @@
                         </div>
 
                         <div class="control-group">
-                            <label>① 対象・年代を選択</label>
+                            <label>対象</label>
                             <select id="filter-study-target" class="form-select">
-                                <!-- ★修正点: valueをデータベースの保存値(snake_case)と一致させました -->
                                 <option value="all">すべて表示</option>
                                 <option value="univ_general">大学生・一般（社会人）</option>
                                 <option value="high_school">高校生</option>
@@ -431,25 +430,24 @@
                                 <option value="elementary">小学生</option>
                                 <option value="infant">幼児</option>
                             </select>
+                        </div>
 
-                            <!-- サブカテゴリ（JSで表示制御） -->
-                            <div id="study-sub-container" style="display:none; margin-top:10px;">
-                                <label>② 詳細カテゴリ</label>
+                        <div id="study-sub-container" style="display:none;">
+                            <div class="control-group">
+                                <label>詳細</label>
                                 <select id="filter-study-sub" class="form-select">
                                     <option value="all">すべて</option>
                                 </select>
                             </div>
                         </div>
+
                         <div class="control-group">
                             <label>検索</label>
-                            <!-- wrapperを縦並び(column)に変更 -->
                             <div class="search-box-wrapper" style="display: flex; flex-direction: column; align-items: flex-start;">
-                                <!-- 入力欄とボタンを包むグループ（ここが横並びになる） -->
                                 <div style="display: flex; gap: 5px; width: 100%;">
                                     <input type="text" id="search-study" placeholder="書名・著者名..." class="form-input" style="flex: 1;">
                                     <button id="btn-search-study" class="search-btn">検索</button>
                                 </div>
-                                <!-- エラーメッセージ（自動的に次の行へ行く） -->
                                 <div id="search-error-study" style="color: #ff4d4f; font-size: 0.85em; margin-top: 4px; display: none;">        
                                     ポリシーに反するワードが含まれています    
                                 </div>

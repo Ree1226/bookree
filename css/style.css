@@ -761,15 +761,15 @@ h2 {
 
 /* ===== スマホ用レイアウト調整（画面幅が768px以下の場合） ===== */
 @media screen and (max-width: 768px) {
-    /* 1. グラフエリアと、表示数・ランキング基準プルダウンを非表示 */
+    /* 1. 【修正】グラフエリアと、表示数・ランキング基準プルダウンを非表示 */
     .chart-wrapper {
         display: none !important;
     }
-    .genre-controls .control-group:first-child,
-    .genre-controls .control-group:nth-child(2) {
+    /* 「>」をつけることで、直下の要素だけを狙い撃ちにし、入れ子になった「詳細」を保護します */
+    .genre-controls > .control-group:first-child,
+    .genre-controls > .control-group:nth-child(2) {
         display: none !important;
-    }
-    
+    }    
     /* 2. 操作パネル全体を幅100%にし、隙間を極限まで詰める */
     .genre-controls {
         width: 100%;
