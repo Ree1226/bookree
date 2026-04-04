@@ -949,7 +949,7 @@ function updateChart(genreId, books) {
     }
   
     const scoreValue = book[displayType] !== undefined ? book[displayType] : 0;
-    const scoreColor = displayType === 'score' ? '#e67e22' : '#27ae60';
+    const scoreColor = displayType === 'score' ? '#0073e6' : '#27ae60';
     const labelPrefix = '★';
     
     const shareText = `『${book.title}』を応援しています！\nみんなのおすすめ本ランキング #BookRee`;

@@ -759,6 +759,34 @@ h2 {
     letter-spacing: 0.0em; /* 文字と文字の隙間を少し開けると、より上品な抜け感が出ます */
 }
 
+/* ===== 【修正】スコアと点数ボタンのカラー変更（BookRee用：明るいクリアブルー） ===== */
+
+/* スコア（★）のテキスト色（内側の文字も強制的に色を変える指定を追加） */
+.movie-score,
+.movie-score *,
+.book-score,
+.book-score * {
+    color: #0073e6 !important; /* ★ パッと目を引く明るくクリアなブルー */
+    font-weight: bold !important;
+}
+
+/* 点数ボタン（+1, +3, +5）のベースデザイン */
+.btn-vote {
+    background-color: #ffffff !important; 
+    color: #0073e6 !important; /* 明るいブルー */
+    border: 1.5px solid #0073e6 !important; /* 枠線も明るいブルー */
+    border-radius: 4px !important; 
+    font-weight: bold !important;
+    transition: all 0.2s ease !important; 
+}
+
+/* ボタンを押した時（タップ・ホバー時）の反転アクション */
+.btn-vote:active,
+.btn-vote:hover {
+    background-color: #0073e6 !important; /* 背景を明るいブルーに */
+    color: #ffffff !important; 
+}
+
 /* ===== スマホ用レイアウト調整（画面幅が768px以下の場合） ===== */
 @media screen and (max-width: 768px) {
     /* 1. 【修正】グラフエリアと、表示数・ランキング基準プルダウンを非表示 */
@@ -942,61 +970,62 @@ h2 {
         padding-bottom: 0px !important; 
     }
 
-    /* 16. 【横スクロール用レイアウト】縦1列（画像→タイトル→著者→スコア）にし、横幅を狭くする */
+    /* 16. 【横スクロール用レイアウト】画像・タイトル・スコアを中央揃えにする（BookRee版） */
     .book-item {
         display: grid !important;
-        width: 116px !important; /* ★ここでカードの横幅を細く固定しています */
-        flex-shrink: 0 !important; /* 横スクロール時にカードが潰れるのを防ぐ */
-        grid-template-columns: 1fr !important; /* 2列から1列に変更 */
+        width: 100% !important; /* ★ 親のカード幅いっぱいに広げる */
+        grid-template-columns: 1fr !important;
         grid-template-areas: 
             "cover"
             "title"
             "author"
             "score" !important;
-        gap: 4px !important; /* 縦の隙間 */
+        gap: 4px !important;
         align-items: start !important;
+        justify-items: center !important; /* 要素を中央配置 */
+        order: 1 !important; /* スマホでの表示順（1番目） */
+        margin-bottom: 6px !important;
     }
 
-    /* .book-infoの箱を"透明化"して、中身を直接グリッドに配置する魔法の指定 */
     .book-info {
         display: contents !important;
     }
 
-    /* ① 画像の配置（一番上） */
     .book-cover {
         grid-area: cover !important;
-        width: 100% !important; /* 116pxの枠にピッタリ収める */
+        width: 100% !important; 
         height: auto !important;
-        margin: 0 !important;
+        margin: 0 auto !important; /* 画像を中央に寄せる */
     }
 
-    /* ② タイトルの配置（画像の下） */
     .book-title {
         grid-area: title !important;
-        white-space: normal !important; /* 折り返して表示 */
+        width: 100% !important;
+        text-align: center !important; /* 文字を中央揃えに */
+        white-space: normal !important;
         line-height: 1.3 !important;
         margin-top: 4px !important;
-        font-size: 13px !important; /* 細い横幅に合わせて少し調整 */
-        
-        /* 横スクロールで高さがガタガタにならないよう、最大3行で「...」と省略する処理 */
+        font-size: 13px !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 3 !important;
         -webkit-box-orient: vertical !important;
         overflow: hidden !important;
     }
 
-    /* ③ 著者名の配置（タイトルの下） */
     .book-author-text {
         grid-area: author !important;
+        width: 100% !important;
+        text-align: center !important; /* 文字を中央揃えに */
         margin-top: 0 !important;
         margin-bottom: 2px !important;
-        font-size: 11px !important; /* 少し小さく */
+        font-size: 11px !important;
         color: #666 !important;
     }
 
-    /* ④ スコアの配置（著者の下） */
     .movie-score {
         grid-area: score !important;
+        width: 100% !important;
+        text-align: center !important; /* 文字を中央揃えに */
         font-size: 13px !important; 
         margin: 0 !important;
     }
@@ -1007,4 +1036,32 @@ h2 {
         display: none !important;
     } /* ←★ここが抜けていました！ */
 
+    /* 20. 【新規追加】スマホ版でカード内要素の順番を入れ替え、余白を最適化する（BookRee用） */
+    .book-card {
+        display: flex !important;
+        flex-direction: column !important; 
+        padding: 8px 8px 6px 8px !important; 
+        width: 136px !important; /* カード全体の幅を固定して余白を消す */
+        flex-shrink: 0 !important; 
+    }
+
+    /* ② 点数ボタン・投票済エリア（スコアのすぐ下へ移動） */
+    .rating-area {
+        order: 2 !important;
+        margin-top: 0 !important;
+        margin-bottom: 6px !important;
+        padding-top: 0 !important;
+    }
+
+    /* ③ Amazonボタン（点数ボタンの下へ移動） */
+    .link-buttons-area,
+    .amazon-btn-wrapper,
+    .buy-links,
+    .amazon-link-btn { /* ★実際のクラス名を追加しました！ */
+        order: 3 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        width: 100% !important; /* 念のため横幅いっぱいに揃える指定を追加 */
+        box-sizing: border-box !important;
+    }
 }
