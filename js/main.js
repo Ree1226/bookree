@@ -927,7 +927,8 @@ function updateChart(genreId, books) {
         coverHtml = `            
             <img src="${imgUrl}"                  
             class="book-cover"                  
-            alt="${book.title}"                  
+            alt="${book.title}"
+            loading="lazy"             
             onerror="this.onerror=null; this.outerHTML='<div class=&quot;book-cover-placeholder&quot;>No Image</div>';">        
         `;    
     } else {        
@@ -1151,6 +1152,7 @@ function createExternalBookCard(item) {
             <img src="${imgUrl}"
                 class="book-cover"
                 alt="${title}"
+                loading="lazy"
                 onerror="this.onerror=null; this.outerHTML='<div class=&quot;book-cover-placeholder&quot;>No Image</div>';">
        `;    
     } else {
