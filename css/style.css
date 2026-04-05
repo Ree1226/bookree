@@ -276,7 +276,7 @@ h2 {
 
 .genre-controls select:focus,
 .genre-controls input:focus {
-    border-color: #3498db;
+    border-color: #0073e6;
     outline: none;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
@@ -290,9 +290,9 @@ h2 {
     border-right: none;
 }
 .search-btn {
-    background-color: #3498db;
+    background-color: #0073e6;
     color: white;
-    border: 1px solid #3498db;
+    border: 1px solid #0073e6;
     padding: 0 20px;
     border-radius: 0 8px 8px 0;
     cursor: pointer;
@@ -301,8 +301,10 @@ h2 {
     white-space: nowrap;  /* 【追加】文字の折り返しを禁止 */    
     min-width: 80px;      /* 【追加】最低限の幅を確保 */
 }
-.search-btn:hover { background-color: #2980b9; }
-
+.search-btn:hover { 
+    background-color: #005bb5; /* 少し濃いブルーに変更 */
+    border-color: #005bb5;     /* ★枠線の色も合わせて変更するとより綺麗です */
+}
 
 /* =========================================
    本棚エリア（横スクロール）
@@ -1051,6 +1053,7 @@ h2 {
         margin-top: 0 !important;
         margin-bottom: 6px !important;
         padding-top: 0 !important;
+        border: none !important; /* ★追加：上部の点線を非表示にする */
     }
 
     /* ③ Amazonボタン（点数ボタンの下へ移動） */
@@ -1064,4 +1067,17 @@ h2 {
         width: 100% !important; /* 念のため横幅いっぱいに揃える指定を追加 */
         box-sizing: border-box !important;
     }
+
+    /* 21. 【新規追加】スマホ版では点数ボタンを常時ブルーにする（BookRee用） */
+    .btn-vote {
+        background-color: #0073e6 !important; /* BookReeの明るいブルー */
+        color: #ffffff !important;            /* 文字は白色 */
+        border: 1px solid #0073e6 !important; /* 枠線もブルー */
+    }
+
+    /* ★おまけ：タップした瞬間に少し濃いブルーにして「押した感」を出す */
+    .btn-vote:active {
+        background-color: #005bb5 !important; /* 少し濃いブルー */
+        border-color: #005bb5 !important;
+    }    
 }

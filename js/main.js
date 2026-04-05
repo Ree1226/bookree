@@ -729,7 +729,7 @@ function renderBookshelf(genreId, books) {
     if (books.length === 0) {
         container.innerHTML = `<p style="padding:20px; color:#666; width:100%; text-align:center;">
             ランキング内に見つかりません。<br>
-            <span style="font-size:0.9em; color:#3498db;">Enterキー または 検索ボタンで、Web上の本を検索・投票できます</span>
+            <span style="font-size:0.9em; color:#0073e6;">Enterキー または 検索ボタンで、Web上の本を検索・投票できます</span>
         </p>`;
         return;
     }
@@ -752,8 +752,8 @@ function renderBookshelf(genreId, books) {
             margin: 30px auto 10px;      /* 上に少し余白を開ける */
             padding: 12px 50px;          /* 横幅を広めに */
             background-color: #fff;      /* 背景は白 */
-            color: #3498db;              /* 文字はサイトのテーマカラーの青 */
-            border: 2px solid #3498db;   /* 枠線を青く */
+            color: #0073e6;              /* 文字はサイトのテーマカラーの青 */
+            border: 2px solid #0073e6;   /* 枠線を青く */
             border-radius: 30px;         /* 丸みを強くしてカプセル型に */
             cursor: pointer;
             font-weight: bold;
@@ -764,7 +764,7 @@ function renderBookshelf(genreId, books) {
         
         // マウスを乗せた時の動き（青く反転）
         loadMoreBtn.onmouseover = () => {
-            loadMoreBtn.style.background = "#3498db";
+            loadMoreBtn.style.background = "#0073e6";
             loadMoreBtn.style.color = "#fff";
             loadMoreBtn.style.boxShadow = "0 6px 14px rgba(52, 152, 219, 0.4)";
             loadMoreBtn.style.transform = "translateY(-2px)"; // 少し浮き上がる
@@ -773,7 +773,7 @@ function renderBookshelf(genreId, books) {
         // マウスを離した時の動き（元に戻す）
         loadMoreBtn.onmouseout = () => {
             loadMoreBtn.style.background = "#fff";
-            loadMoreBtn.style.color = "#3498db";
+            loadMoreBtn.style.color = "#0073e6";
             loadMoreBtn.style.boxShadow = "0 4px 10px rgba(52, 152, 219, 0.2)";
             loadMoreBtn.style.transform = "translateY(0)";
         };
