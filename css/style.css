@@ -357,6 +357,7 @@ h2 {
 .book-cover {
     width: 80px;
     height: auto;
+    aspect-ratio: 80 / 110;
     object-fit: contain;
     border-radius: 4px;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.15);
@@ -624,14 +625,6 @@ h2 {
         /* ▲▲▲ 変更ここまで ▲▲▲ */
     }
 
-    /* 画像サイズもカード幅に合わせて調整 */
-    .book-cover {
-        /* カードが小さくなるので、画像も少し小さく調整 */
-        width: auto !important; 
-        height: 100px !important; /* 高さを抑える */
-        margin: 0 auto 10px auto; /* 中央寄せ */
-    }
-    
     /* 以前の .book-img クラスがあればそれも調整 */
     .book-img {
         height: 100px !important;
@@ -997,6 +990,7 @@ h2 {
         grid-area: cover !important;
         width: 100% !important; 
         height: auto !important;
+        aspect-ratio: 80 / 110 !important;
         margin: 0 auto !important; /* 画像を中央に寄せる */
     }
 
