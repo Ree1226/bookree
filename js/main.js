@@ -329,18 +329,51 @@ const normalize = (str) => {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
+    // 1. スクロールを監視する「オブザーバー」を作成
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            // 画面に近づいたセクションがあれば...
+            if (entry.isIntersecting) {
+                const genreId = entry.target.dataset.genreId;
+                
+                // そのジャンルだけ、データベースからの読み込みを開始！
+                setupGenreSection(genreId);
+                
+                // 一度読み込んだら、もう監視する必要はないので解除する
+                obs.unobserve(entry.target);
+            }
+        });
+    }, {
+        // ★ここがプロの技：画面に入る「500px手前」で早めに読み込みを開始する
+        rootMargin: "500px 0px" 
+    });
+
+    // 2. 各ジャンルの初期設定と、監視の開始
     GENRES.forEach(genre => {
         isWebSearching[genre.id] = false; 
         currentRankingTypes[genre.id] = 'score'; 
-        currentLimits[genre.id] = 20; // ★初期表示数を20に設定
-        setupGenreSection(genre.id);
+        currentLimits[genre.id] = 20; 
+        
+        // HTMLの各ジャンルを囲む大枠（<div id="section-literature">など）を取得
+        const sectionEl = document.getElementById(`section-${genre.id}`);
+        if (sectionEl) {
+            // オブザーバーに「これは何のジャンルか」を教えるための目印をつける
+            sectionEl.dataset.genreId = genre.id;
+            // 監視スタート（まだ読み込みはしない！）
+            observer.observe(sectionEl);
+        } else {
+            // 万が一HTMLが見つからない場合は、安全のため今まで通り即座に読み込む
+            setupGenreSection(genre.id);
+        }
     });
+
     initModal();
 
     // ▼▼▼ 2026年ランキングの初期化 ▼▼▼
+    // ※最新トレンドは一番上にあって最初から画面に入るので、監視せずに即座に読み込む
     isWebSearching['2026'] = false;
     currentRankingTypes['2026'] = 'score';
-    currentLimits['2026'] = 20; // ★初期表示数を20に設定
+    currentLimits['2026'] = 20; 
     setup2026Section(); 
 
     // ▼▼▼ おすすめ本の読み込み ▼▼▼    
@@ -1098,7 +1131,7 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
                     }
                 }
             };
-            
+
             return backCard;
         };
 
