@@ -1073,5 +1073,24 @@ h2 {
     .btn-vote:active {
         background-color: #005bb5 !important; /* 少し濃いブルー */
         border-color: #005bb5 !important;
-    }    
+    }
+    
+    /* 21. ランキングに戻るカードの幅を狭くする（BookRee用） */
+    .back-to-ranking-card {
+        width: 80px !important;      /* カードの幅を大幅にスリム化 */
+        min-width: 80px !important;
+        max-width: 80px !important;
+        padding: 10px 4px !important; /* 内側の左右の余白を削る */
+    }
+
+    /* スリム化に合わせて、中のアイコンや文字も少し小さく調整 */
+    .back-to-ranking-card > div:first-child {
+        font-size: 2rem !important;       /* 🔙アイコンのサイズ */
+        margin-bottom: 6px !important;    /* アイコンの下の隙間 */
+    }
+
+    .back-to-ranking-card > div:last-child {
+        font-size: 0.8rem !important;     /* 「ランキングに戻る」の文字サイズ */
+        line-height: 1.2 !important;      /* 行間を詰める */
+    }
 }

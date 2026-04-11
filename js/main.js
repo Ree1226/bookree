@@ -1057,12 +1057,66 @@ async function searchExternalBooks(genreId, keyword, isLoadMore = false) {
         const oldBtn = container.querySelector('.search-load-more-btn');
         if (oldBtn) oldBtn.remove();
 
+        const createBackCard = () => {
+            const backCard = document.createElement("div");
+            backCard.className = "book-card back-to-ranking-card"; 
+
+            backCard.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                background-color: #f0f8ff; 
+                border: 2px dashed #0073e6;
+                box-sizing: border-box;
+            `;
+
+            backCard.innerHTML = `
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">🔙</div>
+                <div style="color: #0073e6; font-weight: bold; font-size: 1rem; line-height: 1.4; text-align: center;">
+                    ランキングに<br>戻る
+                </div>
+            `;
+
+            // クリックされた時の処理
+            backCard.onclick = () => {
+                // 1. 検索窓の文字を空にする
+                const searchInput = document.getElementById(`search-${genreId}`);
+                if (searchInput) searchInput.value = "";
+
+                // 2. 並び替えのプルダウンを取得し、「変更された」というイベントを擬似的に発生させる
+                const rankingSelect = document.getElementById(`ranking-type-${genreId}`);
+                if (rankingSelect) {
+                    // ★これが裏ワザです！プルダウンが変更された時の処理（fetchAndRender）を強制的に作動させます
+                    rankingSelect.dispatchEvent(new Event("change"));
+                } else {
+                    // 万が一プルダウンがない場合の予備処理
+                    isWebSearching[genreId] = false;
+                    if (typeof applyLocalFilter === "function") {
+                        applyLocalFilter(genreId);
+                    }
+                }
+            };
+            
+            return backCard;
+        };
+
         // 【修正ポイント2】データが空（検索結果ゼロ）の場合の処理
         if (!data.items || data.items.length === 0) {
             if (!isLoadMore) {
-                container.innerHTML = `<p style="padding:20px; color:#999; text-align:center; width:100%;">該当する本が見つかりませんでした。</p>`;
+                container.appendChild(createBackCard()); // ★空でも戻るカードを置く
+                const noResultMsg = document.createElement("p");
+                noResultMsg.style.cssText = "padding:20px; color:#999; text-align:center; width:100%;";
+                noResultMsg.innerText = "該当する本が見つかりませんでした。";
+                container.appendChild(noResultMsg);
             }
             return;
+        }
+
+        // ★新規検索の時だけ、1枚目に戻るカードを置く
+        if (!isLoadMore) {
+            container.appendChild(createBackCard());
         }
 
         // 本を表示
