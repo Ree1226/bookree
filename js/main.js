@@ -755,8 +755,18 @@ function isSafeText(text) {
     });
 }
 
+// ★追加：各ジャンルの描画タイマーを管理するオブジェクト
+const renderTimers = {};
+
 function renderBookshelf(genreId, books) {
     const container = document.getElementById(`list-${genreId}`);
+    
+    // ★追加：もし前の描画タイマーが動いていたら、キャンセルしてリセットする
+    if (renderTimers[genreId]) {
+        clearTimeout(renderTimers[genreId]);
+        renderTimers[genreId] = null;
+    }
+
     container.innerHTML = "";
     
     if (books.length === 0) {
@@ -768,24 +778,23 @@ function renderBookshelf(genreId, books) {
     }
   
     const currentType = currentRankingTypes[genreId] || 'score';
-  
-    // ★修正ポイント：一度に全部ではなく、1件ずつ順番に画面に追加する仕組み
     let currentIndex = 0;
 
     function renderNextCard() {
-        // まだ表示していない本があれば、1件だけカードを追加する
         if (currentIndex < books.length) {
             const book = books[currentIndex];
             container.appendChild(createBookCard(book, currentIndex + 1, currentType));
             currentIndex++;
 
-            // ブラウザに「画面を描画する」ための隙間（深呼吸）を与えつつ、20ミリ秒後に次を表示
-            requestAnimationFrame(() => {
-                setTimeout(renderNextCard, 20); // この数字（20）を増やすと、よりゆっくり順番に出ます
-            });
+            // ★修正：タイマーのIDを保存しておき、後でキャンセルできるようにする
+            renderTimers[genreId] = setTimeout(() => {
+                requestAnimationFrame(renderNextCard);
+            }, 20); 
         } 
-        // すべての本を表示し終わったら、最後に「もっと見る」ボタンを追加する
         else {
+            // 描画が終わったらタイマー情報を消す
+            renderTimers[genreId] = null;
+            
             const limitCount = currentLimits[genreId] || 20;
             if (books.length >= limitCount) {
                 const loadMoreBtn = document.createElement("button");
