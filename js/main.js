@@ -344,8 +344,8 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }, {
-        // ★ここがプロの技：画面に入る「500px手前」で早めに読み込みを開始する
-        rootMargin: "500px 0px" 
+        // ★スマホの時は「100px手前」にして、複数ジャンルが同時に読み込まれる渋滞を防ぐ
+        rootMargin: window.innerWidth <= 768 ? "100px 0px" : "500px 0px" 
     });
 
     // 2. 各ジャンルの初期設定と、監視の開始
@@ -769,62 +769,75 @@ function renderBookshelf(genreId, books) {
   
     const currentType = currentRankingTypes[genreId] || 'score';
   
-    books.forEach((book, index) => {
-        container.appendChild(createBookCard(book, index + 1, currentType)); 
-    });
-  
-    // ★「もっと見る」ボタンの表示判定とデザイン修正
-    const limitCount = currentLimits[genreId] || 20;
-    if (books.length >= limitCount) {
-        const loadMoreBtn = document.createElement("button");
-        loadMoreBtn.textContent = "もっと見る (+20件)";
-        
-        // ▼▼▼ デザインをサイトのテーマ（青系）に合わせて修正 ▼▼▼
-        loadMoreBtn.style.cssText = `
-            display: block;
-            margin: 30px auto 10px;      /* 上に少し余白を開ける */
-            padding: 12px 50px;          /* 横幅を広めに */
-            background-color: #fff;      /* 背景は白 */
-            color: #0073e6;              /* 文字はサイトのテーマカラーの青 */
-            border: 2px solid #0073e6;   /* 枠線を青く */
-            border-radius: 30px;         /* 丸みを強くしてカプセル型に */
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 15px;
-            transition: all 0.3s ease;   /* ふわっと変化させる */
-            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2); /* 薄い青の影をつける */
-        `;
-        
-        // マウスを乗せた時の動き（青く反転）
-        loadMoreBtn.onmouseover = () => {
-            loadMoreBtn.style.background = "#0073e6";
-            loadMoreBtn.style.color = "#fff";
-            loadMoreBtn.style.boxShadow = "0 6px 14px rgba(52, 152, 219, 0.4)";
-            loadMoreBtn.style.transform = "translateY(-2px)"; // 少し浮き上がる
-        };
-        
-        // マウスを離した時の動き（元に戻す）
-        loadMoreBtn.onmouseout = () => {
-            loadMoreBtn.style.background = "#fff";
-            loadMoreBtn.style.color = "#0073e6";
-            loadMoreBtn.style.boxShadow = "0 4px 10px rgba(52, 152, 219, 0.2)";
-            loadMoreBtn.style.transform = "translateY(0)";
-        };
-        
-        loadMoreBtn.onclick = () => {
-            if (container.loadMore) {
-                loadMoreBtn.textContent = "読み込み中...";
-                loadMoreBtn.style.opacity = "0.7";
-                loadMoreBtn.style.cursor = "wait";
-                loadMoreBtn.disabled = true;
-                container.loadMore();
+    // ★修正ポイント：一度に全部ではなく、1件ずつ順番に画面に追加する仕組み
+    let currentIndex = 0;
+
+    function renderNextCard() {
+        // まだ表示していない本があれば、1件だけカードを追加する
+        if (currentIndex < books.length) {
+            const book = books[currentIndex];
+            container.appendChild(createBookCard(book, currentIndex + 1, currentType));
+            currentIndex++;
+
+            // ブラウザに「画面を描画する」ための隙間（深呼吸）を与えつつ、20ミリ秒後に次を表示
+            requestAnimationFrame(() => {
+                setTimeout(renderNextCard, 20); // この数字（20）を増やすと、よりゆっくり順番に出ます
+            });
+        } 
+        // すべての本を表示し終わったら、最後に「もっと見る」ボタンを追加する
+        else {
+            const limitCount = currentLimits[genreId] || 20;
+            if (books.length >= limitCount) {
+                const loadMoreBtn = document.createElement("button");
+                loadMoreBtn.textContent = "もっと見る (+20件)";
+                
+                loadMoreBtn.style.cssText = `
+                    display: block;
+                    margin: 30px auto 10px;
+                    padding: 12px 50px;
+                    background-color: #fff;
+                    color: #0073e6;
+                    border: 2px solid #0073e6;
+                    border-radius: 30px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 15px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+                `;
+                
+                loadMoreBtn.onmouseover = () => {
+                    loadMoreBtn.style.background = "#0073e6";
+                    loadMoreBtn.style.color = "#fff";
+                    loadMoreBtn.style.boxShadow = "0 6px 14px rgba(52, 152, 219, 0.4)";
+                    loadMoreBtn.style.transform = "translateY(-2px)";
+                };
+                
+                loadMoreBtn.onmouseout = () => {
+                    loadMoreBtn.style.background = "#fff";
+                    loadMoreBtn.style.color = "#0073e6";
+                    loadMoreBtn.style.boxShadow = "0 4px 10px rgba(52, 152, 219, 0.2)";
+                    loadMoreBtn.style.transform = "translateY(0)";
+                };
+                
+                loadMoreBtn.onclick = () => {
+                    if (container.loadMore) {
+                        loadMoreBtn.textContent = "読み込み中...";
+                        loadMoreBtn.style.opacity = "0.7";
+                        loadMoreBtn.style.cursor = "wait";
+                        loadMoreBtn.disabled = true;
+                        container.loadMore();
+                    }
+                };
+                
+                container.appendChild(loadMoreBtn);
             }
-        };
-        // ▲▲▲ デザイン修正ここまで ▲▲▲
-        
-        container.appendChild(loadMoreBtn);
+        }
     }
-  }
+
+    // 1件目の描画をスタート！
+    renderNextCard();
+}
   
 function updateChart(genreId, books) {
     const ctx = document.getElementById(`chart-${genreId}`);
@@ -961,7 +974,8 @@ function updateChart(genreId, books) {
             <img src="${imgUrl}"                  
             class="book-cover"                  
             alt="${book.title}"
-            loading="lazy"             
+            loading="lazy"
+            decoding="async"             
             onerror="this.onerror=null; this.outerHTML='<div class=&quot;book-cover-placeholder&quot;>No Image</div>';">        
         `;    
     } else {        
@@ -1240,6 +1254,7 @@ function createExternalBookCard(item) {
                 class="book-cover"
                 alt="${title}"
                 loading="lazy"
+                decoding="async"
                 onerror="this.onerror=null; this.outerHTML='<div class=&quot;book-cover-placeholder&quot;>No Image</div>';">
        `;    
     } else {
