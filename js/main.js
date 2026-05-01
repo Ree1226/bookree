@@ -464,6 +464,8 @@ function setupGenreSection(genreId) {
           
           loadedBooks[genreId] = books;
           applyLocalFilter(genreId);
+
+          injectStructuredData(genreId, books);
           
       }, (error) => {
           console.error("Firebase Error:", error);
@@ -2097,6 +2099,8 @@ function setup2026Section() {
             
             loadedBooks[sectionId] = books;
             applyLocalFilter(sectionId);
+
+            injectStructuredData(sectionId, books);
             
         }, (error) => {
             console.error("Firebase Error (2026):", error);
@@ -2286,4 +2290,64 @@ function getSecureImageUrl(url) {
     if (!url) return "";
     // http:// を https:// に置換する
     return url.replace("http://", "https://");
+}
+
+/**
+ * ★追加：SEO対策用 構造化データ（JSON-LD）生成関数
+ * Googleのクローラーに「これは本のランキングデータである」と伝えます
+ */
+function injectStructuredData(genreId, books) {
+    // データが空なら何もしない
+    if (!books || books.length === 0) return;
+
+    // このジャンル専用のscriptタグを探す
+    const scriptId = `json-ld-${genreId}`;
+    let script = document.getElementById(scriptId);
+
+    // 古いデータがあれば削除（更新時のため）
+    if (script) {
+        script.remove();
+    }
+
+    // Googleに伝えるためのデータカタログを作成
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "ItemList", // ランキング（リスト）であることを宣言
+        "itemListElement": books.map((book, index) => {
+            // 著者名を文字列化
+            let authorText = "著者不明";
+            if (book.authors && Array.isArray(book.authors)) {
+                authorText = book.authors.join(", ");
+            } else if (book.author) {
+                authorText = book.author;
+            }
+
+            return {
+                "@type": "ListItem",
+                "position": index + 1, // 順位
+                "item": {
+                    "@type": "Book", // 本のデータであることを宣言
+                    "name": book.title,
+                    "author": {
+                        "@type": "Person",
+                        "name": authorText
+                    },
+                    "aggregateRating": {
+                        "@type": "AggregateRating",
+                        "ratingValue": book.score || 0, // スコア
+                        "reviewCount": book.raw_score || 1 // 投票数（概算）
+                    }
+                }
+            };
+        })
+    };
+
+    // 新しいscriptタグを作成して <head> に追加
+    script = document.createElement('script');
+    script.id = scriptId;
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+    
+    // console.log(`[SEO] ${genreId} の構造化データを更新しました`); // 確認用
 }
